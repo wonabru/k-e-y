@@ -32,7 +32,7 @@ func main() {
 	// create a window
 	window := widgets.NewQTabWidget(nil)
 	window.SetMinimumSize2(900, 700)
-	window.SetWindowTitle("QWID Wallet - " + ip_str.String() +
+	window.SetWindowTitle("Okura Wallet - " + ip_str.String() +
 		" Node Account: " +
 		strconv.Itoa(int(common.NumericalDelegatedAccountAddress(common.GetDelegatedAccount()))))
 
