@@ -17,18 +17,19 @@ import (
 )
 
 var (
-	peersConnected   = map[[6]byte][2]byte{}
-	oldPeers         = map[[6]byte][2]byte{}
-	PeersCount       = 0
-	waitChan         = make(chan []byte)
-	tcpConnections   = make(map[[2]byte]map[[4]byte]*net.TCPConn)
-	PeersMutex       = &sync.RWMutex{}
-	Quit             chan os.Signal
-	TransactionTopic = [2]byte{'T', 'T'}
-	NonceTopic       = [2]byte{'N', 'N'}
-	SelfNonceTopic   = [2]byte{'S', 'S'}
-	SyncTopic        = [2]byte{'B', 'B'}
-	RPCTopic         = [2]byte{'R', 'P'}
+	peersConnected      = map[[6]byte][2]byte{}
+	validPeersConnected = map[[4]byte]bool{}
+	oldPeers            = map[[6]byte][2]byte{}
+	PeersCount          = 0
+	waitChan            = make(chan []byte)
+	tcpConnections      = make(map[[2]byte]map[[4]byte]*net.TCPConn)
+	PeersMutex          = &sync.RWMutex{}
+	Quit                chan os.Signal
+	TransactionTopic    = [2]byte{'T', 'T'}
+	NonceTopic          = [2]byte{'N', 'N'}
+	SelfNonceTopic      = [2]byte{'S', 'S'}
+	SyncTopic           = [2]byte{'B', 'B'}
+	RPCTopic            = [2]byte{'R', 'P'}
 )
 
 var Ports = map[[2]byte]int{
@@ -180,6 +181,16 @@ func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
 	conn.Close()
 }
 
+// ValidRegisterPeer Confirm that ip is valid node
+func ValidRegisterPeer(ip [4]byte) {
+	PeersMutex.Lock()
+	defer PeersMutex.Unlock()
+	if _, ok := validPeersConnected[ip]; ok {
+		return
+	}
+	validPeersConnected[ip] = true
+}
+
 // RegisterPeer registers a new peer connection
 func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 	raddr := tcpConn.RemoteAddr().String()
@@ -195,22 +206,27 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 		ip[i] = byte(num)
 	}
 	var topicipBytes [6]byte
-	var addrRemoteBytes [4]byte
 	copy(topicipBytes[:], append(topic[:], ip[:]...))
-	copy(addrRemoteBytes[:], ip[:])
 
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
 
+	// if not proved should not be registered yet
+	if _, ok := validPeersConnected[ip]; !ok {
+		if !bytes.Equal(ip[:], MyIP[:]) {
+			return
+		}
+	}
+
 	// Check if we already have a connection for this peer
-	if existingConn, ok := tcpConnections[topic][addrRemoteBytes]; ok {
+	if existingConn, ok := tcpConnections[topic][ip]; ok {
 		// Try to close the existing connection if it's still open
 		if existingConn != nil {
 			log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
 			existingConn.Close()
 		}
 		// Remove the old connection from our maps
-		delete(tcpConnections[topic], addrRemoteBytes)
+		delete(tcpConnections[topic], ip)
 		delete(peersConnected, topicipBytes)
 	}
 
@@ -222,7 +238,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 	}
 
 	// Register the new connection
-	tcpConnections[topic][addrRemoteBytes] = tcpConn
+	tcpConnections[topic][ip] = tcpConn
 	peersConnected[topicipBytes] = topic
 }
 
