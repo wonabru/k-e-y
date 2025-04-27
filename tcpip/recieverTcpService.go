@@ -135,6 +135,7 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error accepting connection: %w", err)
 	}
+
 	RegisterPeer(topic, tcpConn)
 	return tcpConn, nil
 }
@@ -223,6 +224,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 		}
 		ip[i] = byte(num)
 	}
+	ValidRegisterPeer(ip)
 	var topicipBytes [6]byte
 	copy(topicipBytes[:], append(topic[:], ip[:]...))
 
