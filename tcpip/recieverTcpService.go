@@ -212,6 +212,7 @@ func ReduceTrustRegisterPeer(ip [4]byte) {
 
 // RegisterPeer registers a new peer connection
 func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
+
 	raddr := tcpConn.RemoteAddr().String()
 	ra := strings.Split(raddr, ":")
 	ips := strings.Split(ra[0], ".")
@@ -223,6 +224,9 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 			return
 		}
 		ip[i] = byte(num)
+	}
+	if IsIPBanned(ip) {
+		return
 	}
 	ValidRegisterPeer(ip)
 	var topicipBytes [6]byte

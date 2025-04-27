@@ -6,18 +6,17 @@ import (
 	"sync"
 )
 
-const bannedTime int64 = 5 //1440 * 7 * 6 // 7 days
 var bannedIP map[[4]byte]int64
 var bannedIPMutex sync.RWMutex
 
 func init() {
 	bannedIP = map[[4]byte]int64{}
 }
-func IsIPBanned(ip [4]byte, h int64) bool {
+func IsIPBanned(ip [4]byte) bool {
 	bannedIPMutex.RLock()
 	defer bannedIPMutex.RUnlock()
 	if hbanned, ok := bannedIP[ip]; ok {
-		if h < hbanned {
+		if common.GetCurrentTimeStampInSecond() < hbanned {
 			return true
 		}
 	}
@@ -28,7 +27,7 @@ func BanIP(ip [4]byte) {
 	bannedIPMutex.Lock()
 	defer bannedIPMutex.Unlock()
 	log.Println("banning ", ip)
-	bannedIP[ip] = common.GetHeight() + bannedTime
+	bannedIP[ip] = common.GetCurrentTimeStampInSecond() + common.BannedTimeSeconds
 	ReduceTrustRegisterPeer(ip)
 	//PeersMutex.RLock()
 	//tcpConns := tcpConnections[topic]

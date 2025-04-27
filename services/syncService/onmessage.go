@@ -21,11 +21,11 @@ var err error
 
 func OnMessage(addr [4]byte, m []byte) {
 
-	h := common.GetHeight()
-	tcpip.ValidRegisterPeer(addr)
-	if tcpip.IsIPBanned(addr, h) {
+	if tcpip.IsIPBanned(addr) {
 		return
 	}
+	h := common.GetHeight()
+	tcpip.ValidRegisterPeer(addr)
 	//log.Println("New message nonce from:", addr)
 	//common.BlockMutex.Lock()
 	//defer common.BlockMutex.Unlock()
@@ -62,15 +62,15 @@ func OnMessage(addr [4]byte, m []byte) {
 				if bytes.Equal(ip4[:], addr[:]) {
 					continue
 				}
-				if _, ok := peersConnectedNN[topicip]; !ok && !tcpip.IsIPBanned(ip4, h) {
+				if _, ok := peersConnectedNN[topicip]; !ok && !tcpip.IsIPBanned(ip4) {
 					go nonceServices.StartSubscribingNonceMsg(ip4)
 				}
 				copy(topicip[:2], tcpip.SyncTopic[:])
-				if _, ok := peersConnectedBB[topicip]; !ok && !tcpip.IsIPBanned(ip4, h) {
+				if _, ok := peersConnectedBB[topicip]; !ok && !tcpip.IsIPBanned(ip4) {
 					go StartSubscribingSyncMsg(ip4)
 				}
 				copy(topicip[:2], tcpip.TransactionTopic[:])
-				if _, ok := peersConnectedTT[topicip]; !ok && !tcpip.IsIPBanned(ip4, h) {
+				if _, ok := peersConnectedTT[topicip]; !ok && !tcpip.IsIPBanned(ip4) {
 					go transactionServices.StartSubscribingTransactionMsg(ip4)
 				}
 				if tcpip.GetPeersCount() > common.MaxPeersConnected {

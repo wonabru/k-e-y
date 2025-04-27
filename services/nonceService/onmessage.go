@@ -23,11 +23,12 @@ func OnMessage(addr [4]byte, m []byte) {
 	if common.IsSyncing.Load() {
 		return
 	}
-	h := common.GetHeight()
-	tcpip.ValidRegisterPeer(addr)
-	if tcpip.IsIPBanned(addr, h) {
+
+	if tcpip.IsIPBanned(addr) {
 		return
 	}
+	h := common.GetHeight()
+	tcpip.ValidRegisterPeer(addr)
 	log.Println("New message nonce from:", addr)
 	defer func() {
 		if r := recover(); r != nil {

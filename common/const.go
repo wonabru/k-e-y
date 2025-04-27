@@ -35,6 +35,7 @@ var (
 	MaxTransactionDelay            int64   = 60480        // one week
 	MaxTransactionInMultiSigPool   int64   = 60480        //one week
 	ConnectionMaxTries                     = 2
+	BannedTimeSeconds              int64   = 600 // 10 minutes
 	DefaultWalletHomePath                  = "/.okura/db/wallet/"
 	DefaultBlockchainHomePath              = "/.okura/db/blockchain/"
 	ConnectionsWithoutVerification         = [][]byte{[]byte("TRAN"), []byte("STAT"), []byte("ENCR"), []byte("DETS"), []byte("STAK"), []byte("ADEX")}

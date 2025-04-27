@@ -10,8 +10,8 @@ import (
 )
 
 func OnMessage(addr [4]byte, m []byte) {
-	h := common.GetHeight()
-	if tcpip.IsIPBanned(addr, h) {
+
+	if tcpip.IsIPBanned(addr) {
 		return
 	}
 	//log.Println("New message nonce from:", addr)
