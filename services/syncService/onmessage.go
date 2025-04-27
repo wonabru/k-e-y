@@ -17,14 +17,15 @@ import (
 	"github.com/okuralabs/okura-node/transactionsPool"
 )
 
+var err error
+
 func OnMessage(addr [4]byte, m []byte) {
 
 	h := common.GetHeight()
-	if tcpip.IsIPBanned(addr, h, tcpip.SyncTopic) {
+	if tcpip.IsIPBanned(addr, h) {
 		return
 	}
 	//log.Println("New message nonce from:", addr)
-	msg := message.TransactionsMessage{}
 	//common.BlockMutex.Lock()
 	//defer common.BlockMutex.Unlock()
 	defer func() {
@@ -35,15 +36,10 @@ func OnMessage(addr [4]byte, m []byte) {
 
 	}()
 
-	amsg, err := msg.GetFromBytes(m)
-	if err != nil {
-		panic(err)
-	}
-
-	isValid := message.CheckMessage(amsg)
+	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
-		log.Println("message is invalid")
-		panic("message is invalid")
+		tcpip.BanIP(addr)
+		return
 	}
 	tcpip.ValidRegisterPeer(addr)
 	switch string(amsg.GetHead()) {
@@ -65,15 +61,15 @@ func OnMessage(addr [4]byte, m []byte) {
 				if bytes.Equal(ip4[:], addr[:]) {
 					continue
 				}
-				if _, ok := peersConnectedNN[topicip]; !ok && !tcpip.IsIPBanned(ip4, h, tcpip.NonceTopic) {
+				if _, ok := peersConnectedNN[topicip]; !ok && !tcpip.IsIPBanned(ip4, h) {
 					go nonceServices.StartSubscribingNonceMsg(ip4)
 				}
 				copy(topicip[:2], tcpip.SyncTopic[:])
-				if _, ok := peersConnectedBB[topicip]; !ok && !tcpip.IsIPBanned(ip4, h, tcpip.SyncTopic) {
+				if _, ok := peersConnectedBB[topicip]; !ok && !tcpip.IsIPBanned(ip4, h) {
 					go StartSubscribingSyncMsg(ip4)
 				}
 				copy(topicip[:2], tcpip.TransactionTopic[:])
-				if _, ok := peersConnectedTT[topicip]; !ok && !tcpip.IsIPBanned(ip4, h, tcpip.TransactionTopic) {
+				if _, ok := peersConnectedTT[topicip]; !ok && !tcpip.IsIPBanned(ip4, h) {
 					go transactionServices.StartSubscribingTransactionMsg(ip4)
 				}
 				if tcpip.GetPeersCount() > common.MaxPeersConnected {

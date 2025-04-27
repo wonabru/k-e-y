@@ -18,7 +18,7 @@ import (
 
 var (
 	peersConnected      = map[[6]byte][2]byte{}
-	validPeersConnected = map[[4]byte]bool{}
+	validPeersConnected = map[[4]byte]int{}
 	oldPeers            = map[[6]byte][2]byte{}
 	PeersCount          = 0
 	waitChan            = make(chan []byte)
@@ -72,6 +72,7 @@ func init() {
 
 	// Rest of your application logic here...
 	log.Printf("Successfully set NODE_IP to %d.%d.%d.%d", int(MyIP[0]), int(MyIP[1]), int(MyIP[2]), int(MyIP[3]))
+	validPeersConnected[MyIP] = 100
 }
 
 func GetIp() [4]byte {
@@ -138,6 +139,7 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 }
 
 func Send(conn *net.TCPConn, message []byte) error {
+
 	message = append(message, []byte("<-END->")...)
 	_, err := conn.Write(message)
 	if err != nil {
@@ -188,7 +190,21 @@ func ValidRegisterPeer(ip [4]byte) {
 	if _, ok := validPeersConnected[ip]; ok {
 		return
 	}
-	validPeersConnected[ip] = true
+	validPeersConnected[ip] = 5
+}
+
+// ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
+func ReduceTrustRegisterPeer(ip [4]byte) {
+	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
+		return
+	}
+	if _, ok := validPeersConnected[ip]; !ok {
+		return
+	}
+	validPeersConnected[ip]--
+	if validPeersConnected[ip] <= 0 {
+		delete(validPeersConnected, ip)
+	}
 }
 
 // RegisterPeer registers a new peer connection
@@ -210,13 +226,6 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
-
-	// if not proved should not be registered yet
-	if _, ok := validPeersConnected[ip]; !ok {
-		if !bytes.Equal(ip[:], MyIP[:]) {
-			return
-		}
-	}
 
 	// Check if we already have a connection for this peer
 	if existingConn, ok := tcpConnections[topic][ip]; ok {

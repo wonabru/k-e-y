@@ -11,11 +11,10 @@ import (
 
 func OnMessage(addr [4]byte, m []byte) {
 	h := common.GetHeight()
-	if tcpip.IsIPBanned(addr, h, tcpip.TransactionTopic) {
+	if tcpip.IsIPBanned(addr, h) {
 		return
 	}
 	//log.Println("New message nonce from:", addr)
-	msg := message.TransactionsMessage{}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -25,20 +24,15 @@ func OnMessage(addr [4]byte, m []byte) {
 
 	}()
 
-	amsg, err := msg.GetFromBytes(m)
-	if err != nil {
-		return
-	}
-
-	isValid := message.CheckMessage(amsg)
+	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
-		log.Println("message is invalid")
-		panic("message is invalid")
+		tcpip.BanIP(addr)
+		return
 	}
 
 	switch string(amsg.GetHead()) {
 	case "tx":
-		msg = amsg.(message.TransactionsMessage)
+		msg := amsg.(message.TransactionsMessage)
 		txn, err := msg.GetTransactionsFromBytes()
 		if err != nil {
 			return

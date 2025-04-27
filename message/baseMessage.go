@@ -57,3 +57,19 @@ func CheckMessage(a AnyMessage) bool {
 	}
 	return isValidHead && isValidChainID
 }
+
+func CheckValidMessage(m []byte) (bool, AnyMessage) {
+	msg := TransactionsMessage{}
+	amsg, err := msg.GetFromBytes(m)
+	if err != nil {
+		log.Println(err)
+		return false, msg
+	}
+
+	isValid := CheckMessage(amsg)
+	if isValid == false {
+		log.Println("message is invalid")
+		return false, msg
+	}
+	return true, amsg
+}
