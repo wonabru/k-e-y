@@ -22,6 +22,7 @@ var err error
 func OnMessage(addr [4]byte, m []byte) {
 
 	h := common.GetHeight()
+	tcpip.ValidRegisterPeer(addr)
 	if tcpip.IsIPBanned(addr, h) {
 		return
 	}
@@ -41,7 +42,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		tcpip.BanIP(addr)
 		return
 	}
-	tcpip.ValidRegisterPeer(addr)
+
 	switch string(amsg.GetHead()) {
 	case "hi": // getheader
 
