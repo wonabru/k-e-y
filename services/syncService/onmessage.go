@@ -45,7 +45,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		log.Println("message is invalid")
 		panic("message is invalid")
 	}
-
+	tcpip.ValidRegisterPeer(addr)
 	switch string(amsg.GetHead()) {
 	case "hi": // getheader
 
