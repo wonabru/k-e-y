@@ -190,7 +190,7 @@ func ValidRegisterPeer(ip [4]byte) {
 	if _, ok := validPeersConnected[ip]; ok {
 		return
 	}
-	validPeersConnected[ip] = 5
+	validPeersConnected[ip] = 50
 }
 
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
