@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/okuralabs/okura-node/common"
 	"log"
 	"net"
 	"syscall"
@@ -227,7 +228,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 
 			if bytes.Equal(r, []byte("<-CLS->")) {
-				if reconnectionTries > 5 {
+				if reconnectionTries > common.ConnectionMaxTries {
 					log.Printf("Too many reconnection attempts for %v, closing connection", ip)
 					PeersMutex.Lock()
 					defer PeersMutex.Unlock()

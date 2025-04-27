@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/okuralabs/okura-node/common"
 	"io"
 	"log"
 	"net"
@@ -190,7 +191,7 @@ func ValidRegisterPeer(ip [4]byte) {
 	if _, ok := validPeersConnected[ip]; ok {
 		return
 	}
-	validPeersConnected[ip] = 50
+	validPeersConnected[ip] = common.ConnectionMaxTries
 }
 
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock

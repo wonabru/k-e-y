@@ -34,6 +34,7 @@ var (
 	VotingHeightDistance           int64   = 60           // 60 => ten minute on average
 	MaxTransactionDelay            int64   = 60480        // one week
 	MaxTransactionInMultiSigPool   int64   = 60480        //one week
+	ConnectionMaxTries                     = 100
 	DefaultWalletHomePath                  = "/.okura/db/wallet/"
 	DefaultBlockchainHomePath              = "/.okura/db/blockchain/"
 	ConnectionsWithoutVerification         = [][]byte{[]byte("TRAN"), []byte("STAT"), []byte("ENCR"), []byte("DETS"), []byte("STAK"), []byte("ADEX")}
