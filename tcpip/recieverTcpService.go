@@ -202,7 +202,8 @@ func ReduceTrustRegisterPeer(ip [4]byte) {
 	if _, ok := validPeersConnected[ip]; !ok {
 		return
 	}
-	validPeersConnected[ip]--
+	// for testing no reduction
+	//validPeersConnected[ip]--
 	if validPeersConnected[ip] <= 0 {
 		delete(validPeersConnected, ip)
 	}
