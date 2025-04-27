@@ -229,6 +229,7 @@ func CreateBlockFromGenesis(genesis Genesis) blocks.Block {
 	if err != nil {
 		log.Fatalf("cannot calculate hash of genesis block header %v", err)
 	}
+
 	if bh.Verify() == false {
 		log.Fatal("Block Header signature in genesis block fails to verify")
 	}
@@ -324,13 +325,13 @@ func GenesisTransaction(sender common.Address, recipient common.Address, genTx G
 	}
 	t.Signature = signature
 
-	//myWallet := wallet.GetActiveWallet()
-	//log.Println(myWallet.PublicKey.GetHex())
-	//err = t.Sign(myWallet, true)
-	//if err != nil {
-	//	log.Fatal("Signing error", err)
-	//}
-	//println(t.Signature.GetHex())
+	myWallet := wallet.GetActiveWallet()
+	log.Println(myWallet.PublicKey.GetHex())
+	err = t.Sign(myWallet, true)
+	if err != nil {
+		log.Fatal("Signing error", err)
+	}
+	println(t.Signature.GetHex())
 
 	if t.Verify() == false {
 		log.Fatal("genesis transaction cannot be verified")
