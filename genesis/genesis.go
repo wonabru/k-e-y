@@ -325,15 +325,14 @@ func GenesisTransaction(sender common.Address, recipient common.Address, genTx G
 	}
 	t.Signature = signature
 
-	//myWallet := wallet.GetActiveWallet()
-	//log.Println(myWallet.PublicKey.GetHex())
-	//err = t.Sign(myWallet, true)
-	//if err != nil {
-	//	log.Fatal("Signing error", err)
-	//}
-	//println(t.Signature.GetHex())
-
 	if t.Verify() == false {
+		myWallet := wallet.GetActiveWallet()
+		log.Println(myWallet.PublicKey.GetHex())
+		err = t.Sign(myWallet, true)
+		if err != nil {
+			log.Fatal("Signing error", err)
+		}
+		println(t.Signature.GetHex())
 		log.Fatal("genesis transaction cannot be verified")
 	}
 	log.Println("transaction signature: ", t.Signature.GetHex())
