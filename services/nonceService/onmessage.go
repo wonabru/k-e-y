@@ -78,7 +78,8 @@ func OnMessage(addr [4]byte, m []byte) {
 			log.Println("nonce signature is invalid")
 			return
 		}
-
+		//register checked Node IP
+		tcpip.NodeRegisterPeer(addr)
 		txDelAcc := transaction.TxData.Recipient
 		n, err := account.IntDelegatedAccountFromAddress(txDelAcc)
 		if err != nil {

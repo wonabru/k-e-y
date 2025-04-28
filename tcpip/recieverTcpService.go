@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
+	"golang.org/x/exp/rand"
 	"io"
 	"log"
 	"net"
@@ -20,6 +21,7 @@ import (
 var (
 	peersConnected      = map[[6]byte][2]byte{}
 	validPeersConnected = map[[4]byte]int{}
+	nodePeersConnected  = map[[4]byte]int{}
 	oldPeers            = map[[6]byte][2]byte{}
 	PeersCount          = 0
 	waitChan            = make(chan []byte)
@@ -195,6 +197,16 @@ func ValidRegisterPeer(ip [4]byte) {
 	validPeersConnected[ip] = common.ConnectionMaxTries
 }
 
+// NodeRegisterPeer Confirm that ip is valid node IP
+func NodeRegisterPeer(ip [4]byte) {
+	PeersMutex.Lock()
+	defer PeersMutex.Unlock()
+	if _, ok := nodePeersConnected[ip]; ok {
+		return
+	}
+	nodePeersConnected[ip] = common.ConnectionMaxTries
+}
+
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
 func ReduceTrustRegisterPeer(ip [4]byte) {
 	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
@@ -277,14 +289,12 @@ func GetIPsConnected() [][]byte {
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
 	uniqueIPs := make(map[[4]byte]struct{})
-	ipb := [4]byte{}
-	for key, value := range peersConnected {
-		if value == [2]byte{'N', 'N'} {
-			copy(ipb[:], key[2:])
-			if bytes.Equal(ipb[:], MyIP[:]) {
+	for key, value := range nodePeersConnected {
+		if value > 1 {
+			if bytes.Equal(key[:], MyIP[:]) {
 				continue
 			}
-			uniqueIPs[ipb] = struct{}{}
+			uniqueIPs[key] = struct{}{}
 		}
 	}
 	var ips [][]byte
@@ -292,7 +302,13 @@ func GetIPsConnected() [][]byte {
 		ips = append(ips, ip[:])
 	}
 	PeersCount = len(ips)
-	return ips
+	// return one random peer only
+	if PeersCount > 0 {
+		rn := rand.Intn(PeersCount)
+		return [][]byte{ips[rn]}
+	} else {
+		return [][]byte{}
+	}
 }
 
 func GetPeersCount() int {
