@@ -158,6 +158,10 @@ func OnMessage(addr [4]byte, m []byte) {
 				hashOfMyBlockBytes, err := blocks.LoadHashOfBlock(index)
 				if err != nil {
 					log.Printf("ERROR: Failed to load block hash for index %d: %v", index, err)
+					defer services.AdjustShiftInPastInReset(hmax)
+					common.ShiftToPastMutex.RLock()
+					defer common.ShiftToPastMutex.RUnlock()
+					services.ResetAccountsAndBlocksSync(index - common.ShiftToPastInReset)
 					panic("cannot load block hash")
 				}
 				if bytes.Equal(block.BlockHash.GetBytes(), hashOfMyBlockBytes) {
