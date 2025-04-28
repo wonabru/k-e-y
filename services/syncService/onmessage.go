@@ -17,14 +17,16 @@ import (
 	"github.com/okuralabs/okura-node/transactionsPool"
 )
 
+var err error
+
 func OnMessage(addr [4]byte, m []byte) {
 
-	h := common.GetHeight()
-	if tcpip.IsIPBanned(addr, h, tcpip.SyncTopic) {
+	if tcpip.IsIPBanned(addr) {
 		return
 	}
+	h := common.GetHeight()
+	tcpip.ValidRegisterPeer(addr)
 	//log.Println("New message nonce from:", addr)
-	msg := message.TransactionsMessage{}
 	//common.BlockMutex.Lock()
 	//defer common.BlockMutex.Unlock()
 	defer func() {
@@ -35,15 +37,10 @@ func OnMessage(addr [4]byte, m []byte) {
 
 	}()
 
-	amsg, err := msg.GetFromBytes(m)
-	if err != nil {
-		panic(err)
-	}
-
-	isValid := message.CheckMessage(amsg)
+	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
-		log.Println("message is invalid")
-		panic("message is invalid")
+		tcpip.BanIP(addr)
+		return
 	}
 
 	switch string(amsg.GetHead()) {
@@ -65,15 +62,15 @@ func OnMessage(addr [4]byte, m []byte) {
 				if bytes.Equal(ip4[:], addr[:]) {
 					continue
 				}
-				if _, ok := peersConnectedNN[topicip]; !ok && !tcpip.IsIPBanned(ip4, h, tcpip.NonceTopic) {
+				if _, ok := peersConnectedNN[topicip]; !ok && !tcpip.IsIPBanned(ip4) {
 					go nonceServices.StartSubscribingNonceMsg(ip4)
 				}
 				copy(topicip[:2], tcpip.SyncTopic[:])
-				if _, ok := peersConnectedBB[topicip]; !ok && !tcpip.IsIPBanned(ip4, h, tcpip.SyncTopic) {
+				if _, ok := peersConnectedBB[topicip]; !ok && !tcpip.IsIPBanned(ip4) {
 					go StartSubscribingSyncMsg(ip4)
 				}
 				copy(topicip[:2], tcpip.TransactionTopic[:])
-				if _, ok := peersConnectedTT[topicip]; !ok && !tcpip.IsIPBanned(ip4, h, tcpip.TransactionTopic) {
+				if _, ok := peersConnectedTT[topicip]; !ok && !tcpip.IsIPBanned(ip4) {
 					go transactionServices.StartSubscribingTransactionMsg(ip4)
 				}
 				if tcpip.GetPeersCount() > common.MaxPeersConnected {
@@ -161,6 +158,10 @@ func OnMessage(addr [4]byte, m []byte) {
 				hashOfMyBlockBytes, err := blocks.LoadHashOfBlock(index)
 				if err != nil {
 					log.Printf("ERROR: Failed to load block hash for index %d: %v", index, err)
+					defer services.AdjustShiftInPastInReset(hmax)
+					common.ShiftToPastMutex.RLock()
+					defer common.ShiftToPastMutex.RUnlock()
+					services.ResetAccountsAndBlocksSync(index - common.ShiftToPastInReset)
 					panic("cannot load block hash")
 				}
 				if bytes.Equal(block.BlockHash.GetBytes(), hashOfMyBlockBytes) {

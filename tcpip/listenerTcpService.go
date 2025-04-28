@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/okuralabs/okura-node/common"
 	"log"
 	"net"
 	"syscall"
@@ -102,31 +103,39 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 				log.Println("wrong message")
 				continue
 			}
-			PeersMutex.RLock()
+			PeersMutex.Lock()
+
 			if bytes.Equal(ipr[:], []byte{0, 0, 0, 0}) {
 
 				tmpConn := tcpConnections[topic]
 				for k, tcpConn0 := range tmpConn {
-					if !bytes.Equal(k[:], MyIP[:]) {
+					if _, ok := validPeersConnected[k]; ok {
+						ReduceTrustRegisterPeer(k)
+					}
+					if _, ok := validPeersConnected[k]; !ok {
+						CloseAndRemoveConnection(tcpConn0)
+					} else if !bytes.Equal(k[:], MyIP[:]) {
 						//log.Println("send to ipr", k)
 						err := Send(tcpConn0, s[4:])
 						if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
-							PeersMutex.RUnlock()
 							CloseAndRemoveConnection(tcpConn0)
-							PeersMutex.RLock()
 						}
 					}
 				}
 			} else {
 				tcpConns := tcpConnections[topic]
 				tcpConn, ok := tcpConns[ipr]
-				if ok {
+
+				if _, ok2 := validPeersConnected[ipr]; ok2 {
+					ReduceTrustRegisterPeer(ipr)
+				}
+				if _, ok2 := validPeersConnected[ipr]; !ok2 {
+					CloseAndRemoveConnection(tcpConn)
+				} else if ok {
 					//log.Println("send to ip", ipr)
 					err := Send(tcpConn, s[4:])
 					if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
-						PeersMutex.RUnlock()
 						CloseAndRemoveConnection(tcpConn)
-						PeersMutex.RLock()
 					}
 				} else {
 					//fmt.Println("no connection to given ip", ipr, topic)
@@ -134,7 +143,7 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 				}
 
 			}
-			PeersMutex.RUnlock()
+			PeersMutex.Unlock()
 		case b := <-waitChan:
 			if bytes.Equal(b, topic[:]) {
 				time.Sleep(time.Millisecond * 10)
@@ -208,6 +217,8 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		case <-Quit:
 			log.Printf("Received quit signal for connection to %v", ip)
 			receiveChan <- []byte("EXIT")
+			PeersMutex.Lock()
+			defer PeersMutex.Unlock()
 			CloseAndRemoveConnection(tcpConn)
 			return
 		default:
@@ -217,8 +228,10 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 
 			if bytes.Equal(r, []byte("<-CLS->")) {
-				if reconnectionTries > 5 {
+				if reconnectionTries > common.ConnectionMaxTries {
 					log.Printf("Too many reconnection attempts for %v, closing connection", ip)
+					PeersMutex.Lock()
+					defer PeersMutex.Unlock()
 					CloseAndRemoveConnection(tcpConn)
 					return
 				}
@@ -237,6 +250,8 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if bytes.Equal(r, []byte("QUITFOR")) {
 				log.Printf("Received QUITFOR signal from %v", ip)
 				receiveChan <- []byte("EXIT")
+				PeersMutex.Lock()
+				defer PeersMutex.Unlock()
 				CloseAndRemoveConnection(tcpConn)
 				return
 			}
@@ -267,8 +282,8 @@ func CloseAndRemoveConnection(tcpConn *net.TCPConn) {
 	if tcpConn == nil {
 		return
 	}
-	PeersMutex.Lock()
-	defer PeersMutex.Unlock()
+	//PeersMutex.Lock()
+	//defer PeersMutex.Unlock()
 	topicipBytes := [6]byte{}
 	for topic, c := range tcpConnections {
 		for k, v := range c {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/okuralabs/okura-node/common"
 	"io"
 	"log"
 	"net"
@@ -17,18 +18,19 @@ import (
 )
 
 var (
-	peersConnected   = map[[6]byte][2]byte{}
-	oldPeers         = map[[6]byte][2]byte{}
-	PeersCount       = 0
-	waitChan         = make(chan []byte)
-	tcpConnections   = make(map[[2]byte]map[[4]byte]*net.TCPConn)
-	PeersMutex       = &sync.RWMutex{}
-	Quit             chan os.Signal
-	TransactionTopic = [2]byte{'T', 'T'}
-	NonceTopic       = [2]byte{'N', 'N'}
-	SelfNonceTopic   = [2]byte{'S', 'S'}
-	SyncTopic        = [2]byte{'B', 'B'}
-	RPCTopic         = [2]byte{'R', 'P'}
+	peersConnected      = map[[6]byte][2]byte{}
+	validPeersConnected = map[[4]byte]int{}
+	oldPeers            = map[[6]byte][2]byte{}
+	PeersCount          = 0
+	waitChan            = make(chan []byte)
+	tcpConnections      = make(map[[2]byte]map[[4]byte]*net.TCPConn)
+	PeersMutex          = &sync.RWMutex{}
+	Quit                chan os.Signal
+	TransactionTopic    = [2]byte{'T', 'T'}
+	NonceTopic          = [2]byte{'N', 'N'}
+	SelfNonceTopic      = [2]byte{'S', 'S'}
+	SyncTopic           = [2]byte{'B', 'B'}
+	RPCTopic            = [2]byte{'R', 'P'}
 )
 
 var Ports = map[[2]byte]int{
@@ -71,6 +73,7 @@ func init() {
 
 	// Rest of your application logic here...
 	log.Printf("Successfully set NODE_IP to %d.%d.%d.%d", int(MyIP[0]), int(MyIP[1]), int(MyIP[2]), int(MyIP[3]))
+	validPeersConnected[MyIP] = 100
 }
 
 func GetIp() [4]byte {
@@ -132,11 +135,13 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error accepting connection: %w", err)
 	}
+
 	RegisterPeer(topic, tcpConn)
 	return tcpConn, nil
 }
 
 func Send(conn *net.TCPConn, message []byte) error {
+
 	message = append(message, []byte("<-END->")...)
 	_, err := conn.Write(message)
 	if err != nil {
@@ -180,8 +185,34 @@ func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
 	conn.Close()
 }
 
+// ValidRegisterPeer Confirm that ip is valid node
+func ValidRegisterPeer(ip [4]byte) {
+	PeersMutex.Lock()
+	defer PeersMutex.Unlock()
+	if _, ok := validPeersConnected[ip]; ok {
+		return
+	}
+	validPeersConnected[ip] = common.ConnectionMaxTries
+}
+
+// ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
+func ReduceTrustRegisterPeer(ip [4]byte) {
+	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
+		return
+	}
+	if _, ok := validPeersConnected[ip]; !ok {
+		return
+	}
+	// for testing no reduction
+	//validPeersConnected[ip]--
+	if validPeersConnected[ip] <= 0 {
+		delete(validPeersConnected, ip)
+	}
+}
+
 // RegisterPeer registers a new peer connection
 func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
+
 	raddr := tcpConn.RemoteAddr().String()
 	ra := strings.Split(raddr, ":")
 	ips := strings.Split(ra[0], ".")
@@ -194,23 +225,25 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 		}
 		ip[i] = byte(num)
 	}
+	if IsIPBanned(ip) {
+		return
+	}
+	ValidRegisterPeer(ip)
 	var topicipBytes [6]byte
-	var addrRemoteBytes [4]byte
 	copy(topicipBytes[:], append(topic[:], ip[:]...))
-	copy(addrRemoteBytes[:], ip[:])
 
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
 
 	// Check if we already have a connection for this peer
-	if existingConn, ok := tcpConnections[topic][addrRemoteBytes]; ok {
+	if existingConn, ok := tcpConnections[topic][ip]; ok {
 		// Try to close the existing connection if it's still open
 		if existingConn != nil {
 			log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
 			existingConn.Close()
 		}
 		// Remove the old connection from our maps
-		delete(tcpConnections[topic], addrRemoteBytes)
+		delete(tcpConnections[topic], ip)
 		delete(peersConnected, topicipBytes)
 	}
 
@@ -222,7 +255,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 	}
 
 	// Register the new connection
-	tcpConnections[topic][addrRemoteBytes] = tcpConn
+	tcpConnections[topic][ip] = tcpConn
 	peersConnected[topicipBytes] = topic
 }
 
