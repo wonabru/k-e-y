@@ -118,25 +118,34 @@ func generateSyncMsgSendHeaders(bHeight int64, height int64) []byte {
 
 func SendHeaders(addr [4]byte, bHeight int64, height int64) {
 	n := generateSyncMsgSendHeaders(bHeight, height)
-	Send(addr, n)
+	if !Send(addr, n) {
+		log.Println("could not send headers")
+	}
 }
 
 func SendGetHeaders(addr [4]byte, height int64) {
 	n := generateSyncMsgGetHeaders(height)
-	Send(addr, n)
+	if !Send(addr, n) {
+		log.Println("could not send get headers")
+	}
 }
 
-func Send(addr [4]byte, nb []byte) {
+func Send(addr [4]byte, nb []byte) bool {
 	nb = append(addr[:], nb...)
-	services.SendMutexSync.Lock()
-	services.SendChanSync <- nb
-	services.SendMutexSync.Unlock()
+	if services.SendMutexSync.TryLock() {
+		defer services.SendMutexSync.Unlock()
+		services.SendChanSync <- nb
+		return true
+	}
+	return false
 }
 
 func sendSyncMsgInLoop() {
 	for range time.Tick(time.Second) {
 		n := generateSyncMsgHeight()
-		Send([4]byte{0, 0, 0, 0}, n)
+		if !Send([4]byte{0, 0, 0, 0}, n) {
+			log.Println("could not send 'hi' message")
+		}
 	}
 }
 

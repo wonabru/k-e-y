@@ -85,7 +85,9 @@ func SendTransactionMsg(ip [4]byte, topic [2]byte) {
 		log.Println(err)
 		return
 	}
-	Send(ip, n.GetBytes())
+	if !Send(ip, n.GetBytes()) {
+		log.Println("could not send standard transaction")
+	}
 }
 
 func SendGT(ip [4]byte, txsHashes [][]byte, syncPre string) {
@@ -94,15 +96,20 @@ func SendGT(ip [4]byte, txsHashes [][]byte, syncPre string) {
 	if err != nil {
 		log.Println("cannot generate transaction msg", err)
 	}
-	Send(ip, transactionMsg.GetBytes())
+	if !Send(ip, transactionMsg.GetBytes()) {
+		log.Println("could not send send transaction in GT message")
+	}
 }
 
-func Send(addr [4]byte, nb []byte) {
+func Send(addr [4]byte, nb []byte) bool {
 
 	nb = append(addr[:], nb...)
-	services.SendMutexTx.Lock()
-	services.SendChanTx <- nb
-	services.SendMutexTx.Unlock()
+	if services.SendMutexTx.TryLock() {
+		defer services.SendMutexTx.Unlock()
+		services.SendChanTx <- nb
+		return true
+	}
+	return false
 }
 
 func Spread(ignoreAddr [4]byte, nb []byte) {
@@ -112,7 +119,9 @@ func Spread(ignoreAddr [4]byte, nb []byte) {
 		copy(ip[:], topicip[2:])
 		if !bytes.Equal(ip[:], ignoreAddr[:]) && !bytes.Equal(ip[:], tcpip.MyIP[:]) {
 			//log.Println("send transactions to ", int(ip[0]), int(ip[1]), int(ip[2]), int(ip[3]))
-			Send(ip, nb)
+			if !Send(ip, nb) {
+				log.Println("could not broadcast transaction")
+			}
 			break
 		}
 	}

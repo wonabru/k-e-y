@@ -216,9 +216,9 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		select {
 		case <-Quit:
 			log.Printf("Received quit signal for connection to %v", ip)
+			receiveChan <- []byte("EXIT")
 			PeersMutex.Lock()
 			defer PeersMutex.Unlock()
-			receiveChan <- []byte("EXIT")
 			CloseAndRemoveConnection(tcpConn)
 			return
 		default:
@@ -249,9 +249,9 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 
 			if bytes.Equal(r, []byte("QUITFOR")) {
 				log.Printf("Received QUITFOR signal from %v", ip)
+				receiveChan <- []byte("EXIT")
 				PeersMutex.Lock()
 				defer PeersMutex.Unlock()
-				receiveChan <- []byte("EXIT")
 				CloseAndRemoveConnection(tcpConn)
 				return
 			}

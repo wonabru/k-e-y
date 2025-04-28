@@ -104,7 +104,9 @@ func OnMessage(addr [4]byte, m []byte) {
 			if err != nil {
 				log.Println("cannot generate transaction msg", err)
 			}
-			Send(addr, transactionMsg.GetBytes())
+			if !Send(addr, transactionMsg.GetBytes()) {
+				log.Println("could not send transaction in sync")
+			}
 		}
 	case "bt":
 		txn := amsg.(message.TransactionsMessage).GetTransactionsBytes()
@@ -133,7 +135,9 @@ func OnMessage(addr [4]byte, m []byte) {
 			if err != nil {
 				log.Println("cannot generate transaction msg", err)
 			}
-			Send(addr, transactionMsg.GetBytes())
+			if !Send(addr, transactionMsg.GetBytes()) {
+				log.Println("could not send transaction is sync bt")
+			}
 		}
 	default:
 	}

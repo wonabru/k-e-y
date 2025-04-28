@@ -198,14 +198,19 @@ func sendNonceMsg(ip [4]byte, topic [2]byte) {
 		log.Println(err)
 		return
 	}
-	Send(ip, n.GetBytes())
+	if !Send(ip, n.GetBytes()) {
+		log.Println("could not send nonce message")
+	}
 }
 
-func Send(addr [4]byte, nb []byte) {
+func Send(addr [4]byte, nb []byte) bool {
 	nb = append(addr[:], nb...)
-	services.SendMutexNonce.Lock()
-	services.SendChanNonce <- nb
-	services.SendMutexNonce.Unlock()
+	if services.SendMutexNonce.TryLock() {
+		defer services.SendMutexNonce.Unlock()
+		services.SendChanNonce <- nb
+		return true
+	}
+	return false
 }
 
 func sendNonceMsgInLoop() {
@@ -263,8 +268,9 @@ func sendReply(addr [4]byte) {
 		log.Println(err)
 		return
 	}
-	Send(addr, n.GetBytes())
-	log.Println("send reply to node ", addr, " my ip ", tcpip.MyIP)
+	if Send(addr, n.GetBytes()) {
+		log.Println("send reply to node ", addr, " my ip ", tcpip.MyIP)
+	}
 }
 
 func StartSubscribingNonceMsgSelf() {
