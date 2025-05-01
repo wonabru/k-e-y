@@ -272,12 +272,16 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 
 			if int32(len(r)) > common.MaxMessageSizeBytes {
 				log.Println("error: too long message received: ", len(r))
+				PeersMutex.Lock()
 				ReduceTrustRegisterPeer(ip)
+				PeersMutex.Unlock()
 				rTopic[topic] = []byte{}
+				if trust, ok := validPeersConnected[ip]; ok && trust <= 0 {
+					BanIP(ip)
+					receiveChan <- []byte("EXIT")
+					return
+				}
 				continue
-				//BanIP(ip)
-				//receiveChan <- []byte("EXIT")
-				//return
 			}
 			if bytes.Equal(r[len(r)-7:], []byte("<-END->")) {
 				if len(r) > 4 {
@@ -285,10 +289,14 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 						receiveChan <- append(ip[:], r[4:]...)
 					} else {
 						log.Println("wrong MessageInitialization", r[:4], "should be", common.MessageInitialization[:])
+						PeersMutex.Lock()
 						ReduceTrustRegisterPeer(ip)
-						//BanIP(ip)
-						//receiveChan <- []byte("EXIT")
-						//return
+						PeersMutex.Unlock()
+						if trust, ok := validPeersConnected[ip]; ok && trust <= 0 {
+							BanIP(ip)
+							receiveChan <- []byte("EXIT")
+							return
+						}
 					}
 				}
 			}

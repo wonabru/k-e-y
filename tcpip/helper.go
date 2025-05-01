@@ -26,7 +26,7 @@ func IsIPBanned(ip [4]byte) bool {
 
 func BanIP(ip [4]byte) {
 	// internal IP should not be banned
-	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:2], InternalIP[:2]) {
+	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:2], InternalIP[:2]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
 		return
 	}
 	bannedIPMutex.Lock()
@@ -35,8 +35,12 @@ func BanIP(ip [4]byte) {
 	bannedIPMutex.Unlock()
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
-	ReduceTrustRegisterPeer(ip)
-
+	if _, ok := validPeersConnected[ip]; ok {
+		delete(validPeersConnected, ip)
+	}
+	if _, ok := nodePeersConnected[ip]; ok {
+		delete(nodePeersConnected, ip)
+	}
 	tcpConns := tcpConnections[NonceTopic]
 	tcpConn, ok := tcpConns[ip]
 	if ok {

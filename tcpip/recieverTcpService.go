@@ -212,7 +212,7 @@ func NodeRegisterPeer(ip [4]byte) {
 
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
 func ReduceTrustRegisterPeer(ip [4]byte) {
-	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
+	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:2], InternalIP[:2]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
 		return
 	}
 	if _, ok := validPeersConnected[ip]; !ok {
@@ -222,7 +222,6 @@ func ReduceTrustRegisterPeer(ip [4]byte) {
 	validPeersConnected[ip]--
 	if validPeersConnected[ip] <= 0 {
 		delete(validPeersConnected, ip)
-		BanIP(ip)
 	}
 }
 
