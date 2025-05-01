@@ -144,6 +144,7 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 
 func Send(conn *net.TCPConn, message []byte) error {
 
+	message = append(common.MessageInitialization[:], message...)
 	message = append(message, []byte("<-END->")...)
 	_, err := conn.Write(message)
 	if err != nil {
