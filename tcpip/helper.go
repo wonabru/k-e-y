@@ -1,6 +1,7 @@
 package tcpip
 
 import (
+	"bytes"
 	"github.com/okuralabs/okura-node/common"
 	"log"
 	"sync"
@@ -24,6 +25,9 @@ func IsIPBanned(ip [4]byte) bool {
 }
 
 func BanIP(ip [4]byte) {
+	if bytes.Equal(ip[:], MyIP[:]) {
+		return
+	}
 	bannedIPMutex.Lock()
 	log.Println("BANNING ", ip)
 	bannedIP[ip] = common.GetCurrentTimeStampInSecond() + common.BannedTimeSeconds

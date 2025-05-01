@@ -192,7 +192,6 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	}
 
 	reconnectionTries := 0
-	lastBytes := []byte{}
 	resetNumber := 0
 
 	defer func() {
@@ -206,7 +205,9 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	}()
 
 	log.Printf("Starting message processing loop for connection to %v", ip)
-	recievedBytes := []byte{}
+
+	rTopic := map[[2]byte][]byte{}
+
 	for {
 		resetNumber++
 		if resetNumber%100 == 0 {
@@ -226,50 +227,6 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if r == nil {
 				continue
 			}
-
-			if bytes.Equal(r, []byte("QUITFOR")) {
-				log.Printf("Received QUITFOR signal from %v", ip)
-				receiveChan <- []byte("EXIT")
-				PeersMutex.Lock()
-				defer PeersMutex.Unlock()
-				CloseAndRemoveConnection(tcpConn)
-				return
-			}
-
-			if bytes.Equal(r, []byte("WAIT")) {
-				waitChan <- topic[:]
-				continue
-			}
-
-			r = append(lastBytes, r...)
-			recievedBytes = append(recievedBytes, r...)
-			rs := bytes.Split(r, []byte("<-END->"))
-			if !bytes.Equal(r[len(r)-7:], []byte("<-END->")) {
-				lastBytes = rs[len(rs)-1]
-			} else {
-				lastBytes = []byte{}
-				recievedBytes = []byte{}
-			}
-
-			if int32(len(r)) > common.MaxMessageSizeBytes {
-				log.Println("error: too long message received: ", len(r))
-				BanIP(ip)
-				receiveChan <- []byte("EXIT")
-				return
-			}
-
-			for _, e := range rs[:len(rs)-1] {
-				if len(e) > 4 {
-					if bytes.Equal(e[:4], common.MessageInitialization[:]) {
-						receiveChan <- append(ip[:], e[4:]...)
-					} else {
-						log.Println("wrong MessageInitialization", e[:4])
-						BanIP(ip)
-						receiveChan <- []byte("EXIT")
-						return
-					}
-				}
-			}
 			if bytes.Equal(r, []byte("<-CLS->")) {
 				if reconnectionTries > common.ConnectionMaxTries {
 					log.Printf("Too many reconnection attempts for %v, closing connection", ip)
@@ -288,6 +245,52 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 				}
 				log.Printf("Successfully reconnected to %v", ip)
 				continue
+			}
+			if bytes.Equal(r, []byte("QUITFOR")) {
+				log.Printf("Received QUITFOR signal from %v", ip)
+				receiveChan <- []byte("EXIT")
+				PeersMutex.Lock()
+				defer PeersMutex.Unlock()
+				CloseAndRemoveConnection(tcpConn)
+				return
+			}
+
+			if bytes.Equal(r, []byte("WAIT")) {
+				waitChan <- topic[:]
+				continue
+			}
+
+			rt, ok := rTopic[topic]
+			if ok {
+				r = append(rt, r...)
+			}
+			if !bytes.Equal(r[len(r)-7:], []byte("<-END->")) {
+				rTopic[topic] = r
+			} else {
+				rTopic[topic] = []byte{}
+			}
+
+			if int32(len(r)) > common.MaxMessageSizeBytes {
+				log.Println("error: too long message received: ", len(r))
+				ReduceTrustRegisterPeer(ip)
+				rTopic[topic] = []byte{}
+				continue
+				//BanIP(ip)
+				//receiveChan <- []byte("EXIT")
+				//return
+			}
+			if bytes.Equal(r[len(r)-7:], []byte("<-END->")) {
+				if len(r) > 4 {
+					if bytes.Equal(r[:4], common.MessageInitialization[:]) {
+						receiveChan <- append(ip[:], r[4:]...)
+					} else {
+						log.Println("wrong MessageInitialization", r[:4], "should be", common.MessageInitialization[:])
+						ReduceTrustRegisterPeer(ip)
+						//BanIP(ip)
+						//receiveChan <- []byte("EXIT")
+						//return
+					}
+				}
 			}
 		}
 	}
