@@ -25,7 +25,8 @@ func IsIPBanned(ip [4]byte) bool {
 }
 
 func BanIP(ip [4]byte) {
-	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:3], InternalIP[:3]) {
+	// internal IP should not be banned
+	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:2], InternalIP[:2]) {
 		return
 	}
 	bannedIPMutex.Lock()
