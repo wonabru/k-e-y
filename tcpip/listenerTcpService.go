@@ -272,6 +272,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 
 			if int32(len(recievedBytes)) > common.MaxMessageSizeBytes {
+				log.Println("error: too long message received")
 				BanIP(ip)
 				receiveChan <- []byte("EXIT")
 				return
