@@ -21,11 +21,8 @@ var err error
 
 func OnMessage(addr [4]byte, m []byte) {
 
-	if tcpip.IsIPBanned(addr) {
-		return
-	}
 	h := common.GetHeight()
-	tcpip.ValidRegisterPeer(addr)
+
 	//log.Println("New message nonce from:", addr)
 	//common.BlockMutex.Lock()
 	//defer common.BlockMutex.Unlock()
@@ -42,7 +39,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		tcpip.BanIP(addr)
 		return
 	}
-
+	tcpip.ValidRegisterPeer(addr)
 	switch string(amsg.GetHead()) {
 	case "hi": // getheader
 

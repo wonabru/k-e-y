@@ -24,11 +24,8 @@ func OnMessage(addr [4]byte, m []byte) {
 		return
 	}
 
-	if tcpip.IsIPBanned(addr) {
-		return
-	}
 	h := common.GetHeight()
-	tcpip.ValidRegisterPeer(addr)
+
 	log.Println("New message nonce from:", addr)
 	defer func() {
 		if r := recover(); r != nil {
@@ -43,7 +40,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		tcpip.BanIP(addr)
 		return
 	}
-
+	tcpip.ValidRegisterPeer(addr)
 	switch string(amsg.GetHead()) {
 	case "nn": // nonce
 

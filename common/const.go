@@ -35,9 +35,9 @@ var (
 	MaxTransactionDelay            int64   = 60480        // one week
 	MaxTransactionInMultiSigPool   int64   = 60480        //one week
 	ConnectionMaxTries                     = 2
-	BannedTimeSeconds              int64   = 600                         // 10 minutes
+	BannedTimeSeconds              int64   = 60                          // 1 minute
 	MessageInitialization                  = [4]byte{'2', '3', '2', '3'} // will be overwrite in init() by MaxMessageSizeBytes
-	MaxMessageSizeBytes            int32   = 1048576                     // should be adjusted to maximal message sent
+	MaxMessageSizeBytes            int32   = 33554432                    // should be adjusted to maximal message sent
 	DefaultWalletHomePath                  = "/.okura/db/wallet/"
 	DefaultBlockchainHomePath              = "/.okura/db/blockchain/"
 	ConnectionsWithoutVerification         = [][]byte{[]byte("TRAN"), []byte("STAT"), []byte("ENCR"), []byte("DETS"), []byte("STAK"), []byte("ADEX")}
