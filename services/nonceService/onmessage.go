@@ -37,6 +37,7 @@ func OnMessage(addr [4]byte, m []byte) {
 
 	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
+		log.Println("nonce msg validation fails")
 		tcpip.BanIP(addr)
 		return
 	}

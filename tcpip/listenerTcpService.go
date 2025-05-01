@@ -263,6 +263,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 					if bytes.Equal(e[:4], common.MessageInitialization[:]) {
 						receiveChan <- append(ip[:], e[4:]...)
 					} else {
+						log.Println("wrong MessageInitialization", e[:4])
 						BanIP(ip)
 						receiveChan <- []byte("EXIT")
 						return
