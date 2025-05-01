@@ -64,7 +64,7 @@ Q:
 
 		SendTransactionMsg(tcpip.MyIP, topic)
 
-		timeout := time.After(time.Millisecond * 1000)
+		timeout := time.After(time.Second * 1)
 
 		select {
 		case s := <-chanRecv:
@@ -73,9 +73,9 @@ Q:
 			}
 		case <-timeout:
 			// Handle timeout
-			log.Println("Timeout occurred")
+			log.Println("broadcastTransactionsMsgInLoop: Timeout occurred")
 			// You can break the loop or return from the function here
-			break Q
+			break
 		}
 
 	}

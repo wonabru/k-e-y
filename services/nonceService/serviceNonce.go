@@ -178,7 +178,7 @@ func sendNonceMsgInLoopSelf(chanRecv chan []byte) {
 Q:
 	for range time.Tick(time.Second) {
 		sendNonceMsg(tcpip.MyIP, topic)
-		timeout := time.After(time.Millisecond * 1000)
+		timeout := time.After(time.Second)
 
 		select {
 		case s := <-chanRecv:
@@ -187,9 +187,9 @@ Q:
 			}
 		case <-timeout:
 			// Handle timeout
-			log.Println("Timeout occurred")
+			log.Println("sendNonceMsgInLoopSelf: Timeout occurred")
 			// You can break the loop or return from the function here
-			break Q
+			break
 		}
 	}
 }
