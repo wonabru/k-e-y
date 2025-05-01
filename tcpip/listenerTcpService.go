@@ -270,8 +270,12 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 
 			for _, e := range rs[:len(rs)-1] {
-				if len(e) > 0 {
-					receiveChan <- append(ip[:], e...)
+				if len(e) > 4 {
+					if bytes.Equal(e[:4], ip[:]) {
+						receiveChan <- append(ip[:], e...)
+					} else {
+						BanIP(ip)
+					}
 				}
 			}
 		}
