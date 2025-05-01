@@ -168,7 +168,6 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 
 	if err != nil {
 		//handleConnectionError(err, topic, conn)
-		conn.Close()
 		return []byte("<-CLS->")
 	}
 
