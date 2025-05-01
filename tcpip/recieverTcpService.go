@@ -2,11 +2,9 @@ package tcpip
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"golang.org/x/exp/rand"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -138,7 +136,10 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 		return nil, fmt.Errorf("error accepting connection: %w", err)
 	}
 
-	RegisterPeer(topic, tcpConn)
+	if !RegisterPeer(topic, tcpConn) {
+		tcpConn.Close()
+		return nil, fmt.Errorf("connection was closed")
+	}
 	return tcpConn, nil
 }
 
@@ -175,18 +176,18 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 }
 
 // handleConnectionError logs different connection errors and tries to reconnect if necessary
-func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
-	switch {
-	case errors.Is(err, syscall.EPIPE), errors.Is(err, syscall.ECONNRESET), errors.Is(err, syscall.ECONNABORTED):
-		log.Print("This is a broken pipe error. Attempting to reconnect...")
-	case err == io.EOF:
-		log.Print("Connection closed by peer. Attempting to reconnect...")
-	default:
-		log.Printf("Unexpected error: %v", err)
-	}
-	// Close the current connection
-	conn.Close()
-}
+//func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
+//	switch {
+//	case errors.Is(err, syscall.EPIPE), errors.Is(err, syscall.ECONNRESET), errors.Is(err, syscall.ECONNABORTED):
+//		log.Print("This is a broken pipe error. Attempting to reconnect...")
+//	case err == io.EOF:
+//		log.Print("Connection closed by peer. Attempting to reconnect...")
+//	default:
+//		log.Printf("Unexpected error: %v", err)
+//	}
+//	// Close the current connection
+//	conn.Close()
+//}
 
 // ValidRegisterPeer Confirm that ip is valid node
 func ValidRegisterPeer(ip [4]byte) {
@@ -224,7 +225,7 @@ func ReduceTrustRegisterPeer(ip [4]byte) {
 }
 
 // RegisterPeer registers a new peer connection
-func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
+func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 
 	raddr := tcpConn.RemoteAddr().String()
 	ra := strings.Split(raddr, ":")
@@ -234,12 +235,13 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 		num, err := strconv.Atoi(ips[i])
 		if err != nil {
 			fmt.Println("Invalid IP address segment:", ips[i])
-			return
+			return false
 		}
 		ip[i] = byte(num)
 	}
 	if IsIPBanned(ip) {
-		return
+		log.Println("IP is BANNED", ip)
+		return false
 	}
 	ValidRegisterPeer(ip)
 	var topicipBytes [6]byte
@@ -270,6 +272,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) {
 	// Register the new connection
 	tcpConnections[topic][ip] = tcpConn
 	peersConnected[topicipBytes] = topic
+	return true
 }
 
 func GetPeersConnected(topic [2]byte) map[[6]byte][2]byte {
