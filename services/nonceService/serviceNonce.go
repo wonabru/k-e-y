@@ -187,7 +187,7 @@ Q:
 			}
 		case <-timeout:
 			// Handle timeout
-			log.Println("sendNonceMsgInLoopSelf: Timeout occurred")
+			//log.Println("sendNonceMsgInLoopSelf: Timeout occurred")
 			// You can break the loop or return from the function here
 			break
 		}
