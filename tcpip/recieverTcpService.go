@@ -42,11 +42,13 @@ var Ports = map[[2]byte]int{
 }
 
 var MyIP [4]byte
+var InternalIP [4]byte
 
 func init() {
 	Quit = make(chan os.Signal)
 	signal.Notify(Quit, syscall.SIGTERM, syscall.SIGINT, os.Interrupt)
 	MyIP = GetIp()
+	copy(InternalIP[:], MyIP[:])
 	log.Println("Discover MyIP: ", MyIP)
 	for k := range Ports {
 		tcpConnections[k] = map[[4]byte]*net.TCPConn{}

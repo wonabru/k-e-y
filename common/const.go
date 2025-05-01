@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/okuralabs/okura-node/crypto/oqs"
@@ -132,7 +133,9 @@ func GetMyRewardPercentage() int16 {
 }
 
 func init() {
-	copy(MessageInitialization[:], GetByteInt32(MaxMessageSizeBytes))
+	if !bytes.Equal(MessageInitialization[:], GetByteInt32(MaxMessageSizeBytes)) {
+		log.Fatal("set proper MessageInitialization that fit to MaxMessageSizeBytes. Must be: common.MessageInitialization == GetByteInt32(common.MaxMessageSizeBytes)")
+	}
 	enc1 := oqs.NewConfigEnc1()
 	fmt.Print(enc1.ToString())
 	enc2 := oqs.NewConfigEnc2()
