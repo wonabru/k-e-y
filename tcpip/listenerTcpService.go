@@ -206,7 +206,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	}()
 
 	log.Printf("Starting message processing loop for connection to %v", ip)
-
+	recievedBytes := []byte{}
 	for {
 		resetNumber++
 		if resetNumber%100 == 0 {
@@ -262,14 +262,16 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 
 			r = append(lastBytes, r...)
+			recievedBytes = append(recievedBytes, r...)
 			rs := bytes.Split(r, []byte("<-END->"))
 			if !bytes.Equal(r[len(r)-7:], []byte("<-END->")) {
 				lastBytes = rs[len(rs)-1]
 			} else {
 				lastBytes = []byte{}
+				recievedBytes = []byte{}
 			}
 
-			if int32(len(r)) > common.MaxMessageSizeBytes {
+			if int32(len(recievedBytes)) > common.MaxMessageSizeBytes {
 				BanIP(ip)
 				receiveChan <- []byte("EXIT")
 				PeersMutex.Lock()
