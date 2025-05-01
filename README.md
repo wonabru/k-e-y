@@ -64,6 +64,8 @@ Ports TCP needed to be opened:
     SelfNonceTopic:   7091,
     SyncTopic:        6091,
 
+localhost port that should be closed from anywhere:
+
     9009 - wallet - node communication
 
     8000 - qt requirements (localhost only)
