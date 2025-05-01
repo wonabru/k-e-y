@@ -16,7 +16,7 @@ func IsIPBanned(ip [4]byte) bool {
 	bannedIPMutex.RLock()
 	defer bannedIPMutex.RUnlock()
 	if hbanned, ok := bannedIP[ip]; ok {
-		if common.GetCurrentTimeStampInSecond() < hbanned {
+		if hbanned > common.GetCurrentTimeStampInSecond() {
 			return true
 		}
 	}
@@ -25,18 +25,29 @@ func IsIPBanned(ip [4]byte) bool {
 
 func BanIP(ip [4]byte) {
 	bannedIPMutex.Lock()
-	defer bannedIPMutex.Unlock()
-	log.Println("banning ", ip)
+	log.Println("BANNING ", ip)
 	bannedIP[ip] = common.GetCurrentTimeStampInSecond() + common.BannedTimeSeconds
+	bannedIPMutex.Unlock()
+	PeersMutex.Lock()
+	defer PeersMutex.Unlock()
 	ReduceTrustRegisterPeer(ip)
-	//PeersMutex.RLock()
-	//tcpConns := tcpConnections[topic]
-	//tcpConn, ok := tcpConns[ip]
-	//PeersMutex.RUnlock()
-	//if ok {
-	//	PeersMutex.Lock()
-	//	defer PeersMutex.Unlock()
-	//	CloseAndRemoveConnection(tcpConn)
-	//}
 
+	tcpConns := tcpConnections[NonceTopic]
+	tcpConn, ok := tcpConns[ip]
+	if ok {
+		CloseAndRemoveConnection(tcpConn)
+		return
+	}
+	tcpConns = tcpConnections[TransactionTopic]
+	tcpConn, ok = tcpConns[ip]
+	if ok {
+		CloseAndRemoveConnection(tcpConn)
+		return
+	}
+	tcpConns = tcpConnections[SyncTopic]
+	tcpConn, ok = tcpConns[ip]
+	if ok {
+		CloseAndRemoveConnection(tcpConn)
+		return
+	}
 }

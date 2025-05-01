@@ -274,9 +274,6 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if int32(len(recievedBytes)) > common.MaxMessageSizeBytes {
 				BanIP(ip)
 				receiveChan <- []byte("EXIT")
-				PeersMutex.Lock()
-				defer PeersMutex.Unlock()
-				CloseAndRemoveConnection(tcpConn)
 				return
 			}
 
@@ -287,9 +284,6 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 					} else {
 						BanIP(ip)
 						receiveChan <- []byte("EXIT")
-						PeersMutex.Lock()
-						defer PeersMutex.Unlock()
-						CloseAndRemoveConnection(tcpConn)
 						return
 					}
 				}
