@@ -275,6 +275,11 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 						receiveChan <- append(ip[:], e...)
 					} else {
 						BanIP(ip)
+						receiveChan <- []byte("EXIT")
+						PeersMutex.Lock()
+						defer PeersMutex.Unlock()
+						CloseAndRemoveConnection(tcpConn)
+						return
 					}
 				}
 			}
