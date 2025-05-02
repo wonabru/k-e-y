@@ -1,6 +1,7 @@
 # Node go OKURA
 
 Works for Ubuntu 22.04 (gcc 11) and go1.23.6
+Only one network interface should be with external public IP
 
 Install prerequisites
 
