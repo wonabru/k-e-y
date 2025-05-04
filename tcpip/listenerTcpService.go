@@ -184,6 +184,8 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			PeersMutex.Unlock()
 			if trust, ok := validPeersConnected[ip]; ok && trust <= 0 {
 				BanIP(ip)
+			} else {
+				BanIP(ip)
 			}
 		}
 	}
