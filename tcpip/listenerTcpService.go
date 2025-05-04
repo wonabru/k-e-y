@@ -204,7 +204,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	}
 
 	//reconnectionTries := 0
-	resetNumber := 0
+	//resetNumber := 0
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -221,10 +221,10 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	rTopic := map[[2]byte][]byte{}
 
 	for {
-		resetNumber++
-		if resetNumber%100 == 0 {
-			reconnectionTries = 0
-		}
+		//resetNumber++
+		//if resetNumber%100 == 0 {
+		//	reconnectionTries = 0
+		//}
 
 		select {
 		case <-Quit:
