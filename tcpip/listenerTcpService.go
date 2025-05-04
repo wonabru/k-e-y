@@ -33,7 +33,9 @@ func StartNewListener(sendChan <-chan []byte, topic [2]byte) {
 		default:
 			_, err := Accept(topic, conn)
 			if err != nil {
-				log.Println(err)
+				if !errors.Is(err, fmt.Errorf("connection was closed")) {
+					log.Println(err)
+				}
 				continue
 			}
 		}

@@ -258,7 +258,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 
 	// Check if we already have a connection for this peer
 	if _, ok := tcpConnections[topic][ip]; ok {
-		log.Println("connection just exists")
+		//log.Println("connection just exists")
 		return false
 		//// Try to close the existing connection if it's still open
 		//if existingConn != nil {
