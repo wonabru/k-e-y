@@ -239,13 +239,14 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if r == nil {
 				continue
 			}
-			if bytes.Equal(r, []byte("<-ERR->")) || bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {
+			if bytes.Equal(r, []byte("<-ERR->")) {
 				if reconnectionTries > common.ConnectionMaxTries {
 					log.Println("error in read. Closing connection", ip, r)
-					receiveChan <- []byte("EXIT")
-					PeersMutex.Lock()
-					defer PeersMutex.Unlock()
-					CloseAndRemoveConnection(tcpConn)
+					tcpConn.Close()
+					tcpConn, err = net.DialTCP("tcp", nil, tcpAddr)
+					if err != nil {
+						log.Printf("Connection attempt %d to %s failed: %v", ipport, err)
+					}
 					reconnectionTries = 0
 					return
 				}
