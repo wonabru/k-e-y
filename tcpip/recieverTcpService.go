@@ -194,10 +194,10 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 func ValidRegisterPeer(ip [4]byte) {
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
-	if n, ok := validPeersConnected[ip]; ok {
-		if n < common.ConnectionMaxTries {
-			validPeersConnected[ip]++
-		}
+	if _, ok := validPeersConnected[ip]; ok {
+		//if n < common.ConnectionMaxTries {
+		//	validPeersConnected[ip]++
+		//}
 		return
 	}
 	validPeersConnected[ip] = common.ConnectionMaxTries
@@ -248,7 +248,6 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 		log.Println("IP is BANNED", ip)
 		return false
 	}
-	ValidRegisterPeer(ip)
 	var topicipBytes [6]byte
 	copy(topicipBytes[:], append(topic[:], ip[:]...))
 
