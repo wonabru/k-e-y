@@ -2,9 +2,11 @@ package tcpip
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"golang.org/x/exp/rand"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -169,7 +171,7 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 	n, err := conn.Read(buf)
 
 	if err != nil {
-		//handleConnectionError(err, topic, conn)
+		handleConnectionError(err, topic, conn)
 		return nil
 	}
 
@@ -177,18 +179,18 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 }
 
 // handleConnectionError logs different connection errors and tries to reconnect if necessary
-//func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
-//	switch {
-//	case errors.Is(err, syscall.EPIPE), errors.Is(err, syscall.ECONNRESET), errors.Is(err, syscall.ECONNABORTED):
-//		log.Print("This is a broken pipe error. Attempting to reconnect...")
-//	case err == io.EOF:
-//		log.Print("Connection closed by peer. Attempting to reconnect...")
-//	default:
-//		log.Printf("Unexpected error: %v", err)
-//	}
-//	// Close the current connection
-//	conn.Close()
-//}
+func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
+	switch {
+	case errors.Is(err, syscall.EPIPE), errors.Is(err, syscall.ECONNRESET), errors.Is(err, syscall.ECONNABORTED):
+		log.Print("This is a broken pipe error. Attempting to reconnect...")
+	case err == io.EOF:
+		log.Print("Connection closed by peer. Attempting to reconnect...")
+	default:
+		log.Printf("Unexpected error: %v", err)
+	}
+	// Close the current connection
+	//conn.Close()
+}
 
 // ValidRegisterPeer Confirm that ip is valid node
 func ValidRegisterPeer(ip [4]byte) {
