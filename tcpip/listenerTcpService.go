@@ -248,7 +248,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 						log.Printf("Connection attempt %d to %s failed: %v", ipport, err.Error())
 					}
 					reconnectionTries = 0
-					return
+					continue
 				}
 				reconnectionTries++
 				continue
