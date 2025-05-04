@@ -209,9 +209,9 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Recovered from panic in connection to %v: %v", ip, r)
+			receiveChan <- []byte("EXIT")
 			PeersMutex.Lock()
 			defer PeersMutex.Unlock()
-			receiveChan <- []byte("EXIT")
 			CloseAndRemoveConnection(tcpConn)
 		}
 	}()
@@ -239,18 +239,9 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if r == nil {
 				continue
 			}
-			if bytes.Equal(r, []byte("<-ERR->")) || bytes.Equal(r, []byte("<-CLS->")) {
+			if bytes.Equal(r, []byte("<-ERR->")) || bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {
 
-				log.Println("error in read. Closing connection", ip)
-				receiveChan <- []byte("EXIT")
-				PeersMutex.Lock()
-				defer PeersMutex.Unlock()
-				CloseAndRemoveConnection(tcpConn)
-				return
-			}
-
-			if bytes.Equal(r, []byte("QUITFOR")) {
-				log.Printf("Received QUITFOR signal from %v", ip)
+				log.Println("error in read. Closing connection", ip, r)
 				receiveChan <- []byte("EXIT")
 				PeersMutex.Lock()
 				defer PeersMutex.Unlock()
