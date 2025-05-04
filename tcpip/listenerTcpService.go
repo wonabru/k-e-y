@@ -203,8 +203,8 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		log.Printf("Successfully connected for TRANSACTIONS TOPIC with %v", ip)
 	}
 
-	//reconnectionTries := 0
-	//resetNumber := 0
+	reconnectionTries := 0
+	resetNumber := 0
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -221,10 +221,10 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	rTopic := map[[2]byte][]byte{}
 
 	for {
-		//resetNumber++
-		//if resetNumber%100 == 0 {
-		//	reconnectionTries = 0
-		//}
+		resetNumber++
+		if resetNumber%100 == 0 {
+			reconnectionTries = 0
+		}
 
 		select {
 		case <-Quit:
@@ -240,15 +240,26 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 				continue
 			}
 			if bytes.Equal(r, []byte("<-ERR->")) || bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {
+				if reconnectionTries > maxRetries {
+					log.Println("error in read. Closing connection", ip, r)
+					receiveChan <- []byte("EXIT")
+					PeersMutex.Lock()
+					defer PeersMutex.Unlock()
+					CloseAndRemoveConnection(tcpConn)
+					reconnectionTries = 0
+					return
+				}
+				reconnectionTries++
+			}
+			if bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {
 
-				log.Println("error in read. Closing connection", ip, r)
+				log.Println("Closing connection", ip, r)
 				receiveChan <- []byte("EXIT")
 				PeersMutex.Lock()
 				defer PeersMutex.Unlock()
 				CloseAndRemoveConnection(tcpConn)
 				return
 			}
-
 			if bytes.Equal(r, []byte("WAIT")) {
 				waitChan <- topic[:]
 				continue
