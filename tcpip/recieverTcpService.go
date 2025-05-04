@@ -257,15 +257,17 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 	defer PeersMutex.Unlock()
 
 	// Check if we already have a connection for this peer
-	if existingConn, ok := tcpConnections[topic][ip]; ok {
-		// Try to close the existing connection if it's still open
-		if existingConn != nil {
-			log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
-			existingConn.Close()
-		}
-		// Remove the old connection from our maps
-		delete(tcpConnections[topic], ip)
-		delete(peersConnected, topicipBytes)
+	if _, ok := tcpConnections[topic][ip]; ok {
+		log.Println("connection just exists")
+		return false
+		//// Try to close the existing connection if it's still open
+		//if existingConn != nil {
+		//	log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
+		//	existingConn.Close()
+		//}
+		//// Remove the old connection from our maps
+		//delete(tcpConnections[topic], ip)
+		//delete(peersConnected, topicipBytes)
 	}
 
 	log.Printf("Registering new connection from address %s on topic %v", ra[0], topic)
