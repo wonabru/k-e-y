@@ -256,7 +256,6 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 					continue
 				}
 				log.Printf("Successfully reconnected to %v", ip)
-				continue
 			}
 			if bytes.Equal(r, []byte("QUITFOR")) {
 				log.Printf("Received QUITFOR signal from %v", ip)
