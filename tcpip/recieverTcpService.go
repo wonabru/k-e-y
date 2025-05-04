@@ -140,7 +140,7 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 
 	if !RegisterPeer(topic, tcpConn) {
 		tcpConn.Close()
-		return nil, fmt.Errorf("connection was closed")
+		return nil, nil
 	}
 	return tcpConn, nil
 }
