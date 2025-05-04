@@ -208,10 +208,11 @@ func NodeRegisterPeer(ip [4]byte) {
 	PeersMutex.Lock()
 	defer PeersMutex.Unlock()
 	if _, ok := nodePeersConnected[ip]; ok {
+		validPeersConnected[ip] = common.ConnectionMaxTries
 		return
 	}
 	nodePeersConnected[ip] = common.ConnectionMaxTries
-	validPeersConnected[ip] = common.ConnectionMaxTries
+
 }
 
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
