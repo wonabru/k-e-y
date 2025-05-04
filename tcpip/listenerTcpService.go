@@ -241,11 +241,11 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 			if bytes.Equal(r, []byte("<-ERR->")) {
 				if reconnectionTries > common.ConnectionMaxTries {
-					log.Println("error in read. Closing connection", ip, r)
+					log.Println("error in read. Closing connection", ip, string(r))
 					tcpConn.Close()
 					tcpConn, err = net.DialTCP("tcp", nil, tcpAddr)
 					if err != nil {
-						log.Printf("Connection attempt %d to %s failed: %v", ipport, err)
+						log.Printf("Connection attempt %d to %s failed: %v", ipport, err.Error())
 					}
 					reconnectionTries = 0
 					return
