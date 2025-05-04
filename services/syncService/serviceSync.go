@@ -52,13 +52,17 @@ func generateSyncMsgGetHeaders(height int64) []byte {
 	}
 	eHeight := height
 	h := common.GetHeight()
-	bHeight := height - common.NumberOfHashesInBucket
+	s2p := height - h + 1
+	if s2p > common.NumberOfHashesInBucket {
+		s2p = common.NumberOfHashesInBucket
+	}
+	bHeight := height - s2p
 	if bHeight < 2 {
 		bHeight = 0
 	}
 	if bHeight > h {
 		bHeight = h
-		eHeight = h + common.NumberOfHashesInBucket
+		eHeight = h + s2p
 		if eHeight > height {
 			eHeight = height
 		}
