@@ -52,9 +52,7 @@ func generateSyncMsgGetHeaders(height int64) []byte {
 	}
 	eHeight := height
 	h := common.GetHeight()
-	common.ShiftToPastMutex.RLock()
-	s2p := common.ShiftToPastInReset
-	common.ShiftToPastMutex.RUnlock()
+	s2p := height - h + 1
 	if s2p > common.NumberOfHashesInBucket {
 		s2p = common.NumberOfHashesInBucket
 	}
