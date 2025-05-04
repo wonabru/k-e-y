@@ -248,22 +248,11 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 				return
 			}
 			if bytes.Equal(r, []byte("<-CLS->")) {
-				if reconnectionTries > common.ConnectionMaxTries {
-					log.Printf("Too many reconnection attempts for %v, closing connection", ip)
-					PeersMutex.Lock()
-					defer PeersMutex.Unlock()
-					CloseAndRemoveConnection(tcpConn)
-					return
-				}
-				reconnectionTries++
-				log.Printf("Connection lost to %v, attempting reconnection (attempt %d)", ip, reconnectionTries)
-				tcpConn, err = net.DialTCP("tcp", nil, tcpAddr)
-				if err != nil {
-					log.Printf("Reconnection attempt %d to %v failed: %v", reconnectionTries, ip, err)
-					time.Sleep(time.Second * 2)
-					continue
-				}
-				log.Printf("Successfully reconnected to %v", ip)
+				log.Printf("Too many reconnection attempts for %v, closing connection", ip)
+				PeersMutex.Lock()
+				defer PeersMutex.Unlock()
+				CloseAndRemoveConnection(tcpConn)
+				return
 			}
 			if bytes.Equal(r, []byte("QUITFOR")) {
 				log.Printf("Received QUITFOR signal from %v", ip)
