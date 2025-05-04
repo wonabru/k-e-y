@@ -239,21 +239,16 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if r == nil {
 				continue
 			}
-			if bytes.Equal(r, []byte("<-ERR->")) {
+			if bytes.Equal(r, []byte("<-ERR->")) || bytes.Equal(r, []byte("<-CLS->")) {
 
 				log.Println("error in read. Closing connection", ip)
+				receiveChan <- []byte("EXIT")
 				PeersMutex.Lock()
 				defer PeersMutex.Unlock()
 				CloseAndRemoveConnection(tcpConn)
 				return
 			}
-			if bytes.Equal(r, []byte("<-CLS->")) {
-				log.Printf("Too many reconnection attempts for %v, closing connection", ip)
-				PeersMutex.Lock()
-				defer PeersMutex.Unlock()
-				CloseAndRemoveConnection(tcpConn)
-				return
-			}
+
 			if bytes.Equal(r, []byte("QUITFOR")) {
 				log.Printf("Received QUITFOR signal from %v", ip)
 				receiveChan <- []byte("EXIT")
