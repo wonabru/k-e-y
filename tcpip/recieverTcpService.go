@@ -262,14 +262,12 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 
 		// Try to close the existing connection if it's still open
 		if existingConn != nil {
-			log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
+			//log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
 			existingConn.Close()
 		}
 		// Remove the old connection from our maps
 		delete(tcpConnections[topic], ip)
 		delete(peersConnected, topicipBytes)
-		delete(validPeersConnected, ip)
-		delete(nodePeersConnected, ip)
 	}
 
 	log.Printf("Registering new connection from address %s on topic %v", ra[0], topic)
