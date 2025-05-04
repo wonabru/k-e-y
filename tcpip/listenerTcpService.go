@@ -113,11 +113,13 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 						ReduceTrustRegisterPeer(k)
 					}
 					if _, ok := validPeersConnected[k]; !ok {
+						log.Println("when send to all, remove connection")
 						CloseAndRemoveConnection(tcpConn0)
 					} else if !bytes.Equal(k[:], MyIP[:]) {
 						//log.Println("send to ipr", k)
 						err := Send(tcpConn0, s[4:])
 						if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
+							log.Println("error in sending to all ", err)
 							CloseAndRemoveConnection(tcpConn0)
 						}
 					}
@@ -130,11 +132,13 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 					ReduceTrustRegisterPeer(ipr)
 				}
 				if _, ok2 := validPeersConnected[ipr]; !ok2 {
+					log.Println("when send to ", ipr, " remove connection")
 					CloseAndRemoveConnection(tcpConn)
 				} else if ok {
 					//log.Println("send to ip", ipr)
 					err := Send(tcpConn, s[4:])
 					if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
+						log.Println("error in sending to ", ipr, err)
 						CloseAndRemoveConnection(tcpConn)
 					}
 				} else {
