@@ -203,7 +203,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		log.Printf("Successfully connected for TRANSACTIONS TOPIC with %v", ip)
 	}
 
-	reconnectionTries := 0
+	//reconnectionTries := 0
 	resetNumber := 0
 
 	defer func() {
