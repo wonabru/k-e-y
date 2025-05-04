@@ -171,8 +171,8 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 	n, err := conn.Read(buf)
 
 	if err != nil {
-		handleConnectionError(err, topic, conn)
-		return nil
+		//handleConnectionError(err, topic, conn)
+		return []byte("<-ERR->")
 	}
 
 	return buf[:n]

@@ -239,6 +239,14 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			if r == nil {
 				continue
 			}
+			if bytes.Equal(r, []byte("<-ERR->")) {
+
+				log.Println("error in read. Closing connection", ip)
+				PeersMutex.Lock()
+				defer PeersMutex.Unlock()
+				CloseAndRemoveConnection(tcpConn)
+				return
+			}
 			if bytes.Equal(r, []byte("<-CLS->")) {
 				if reconnectionTries > common.ConnectionMaxTries {
 					log.Printf("Too many reconnection attempts for %v, closing connection", ip)
