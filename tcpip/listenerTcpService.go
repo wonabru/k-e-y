@@ -240,7 +240,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 				continue
 			}
 			if bytes.Equal(r, []byte("<-ERR->")) || bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {
-				if reconnectionTries > maxRetries {
+				if reconnectionTries > common.ConnectionMaxTries {
 					log.Println("error in read. Closing connection", ip, r)
 					receiveChan <- []byte("EXIT")
 					PeersMutex.Lock()
