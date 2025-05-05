@@ -142,7 +142,7 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 
 	if !RegisterPeer(topic, tcpConn) {
 		tcpConn.Close()
-		return nil, nil
+		return nil, fmt.Errorf("error with registration of connection: %w", err)
 	}
 	tcpConn.SetKeepAlive(true)
 	return tcpConn, nil
