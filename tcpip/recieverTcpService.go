@@ -199,14 +199,14 @@ func ValidRegisterPeer(ip [4]byte) {
 
 // NodeRegisterPeer Confirm that ip is valid node IP
 func NodeRegisterPeer(ip [4]byte) {
-	PeersMutex.Lock()
-	defer PeersMutex.Unlock()
-	if _, ok := nodePeersConnected[ip]; ok {
-		validPeersConnected[ip] = common.ConnectionMaxTries
-		return
+	if PeersMutex.TryLock() {
+		defer PeersMutex.Unlock()
+		if _, ok := nodePeersConnected[ip]; ok {
+			validPeersConnected[ip] = common.ConnectionMaxTries
+			return
+		}
+		nodePeersConnected[ip] = common.ConnectionMaxTries
 	}
-	nodePeersConnected[ip] = common.ConnectionMaxTries
-
 }
 
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock
@@ -275,6 +275,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 	tcpConnections[topic][ip] = tcpConn
 	peersConnected[topicipBytes] = topic
 	return true
+
 }
 
 func GetPeersConnected(topic [2]byte) map[[6]byte][2]byte {
@@ -316,6 +317,7 @@ func GetIPsConnected() [][]byte {
 			return [][]byte{}
 		}
 	}
+	return [][]byte{}
 }
 
 func GetPeersCount() int {
