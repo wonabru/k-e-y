@@ -37,7 +37,7 @@ func OnMessage(addr [4]byte, m []byte) {
 	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
 		log.Println("sync msg validation fails")
-		tcpip.BanIP(addr)
+		tcpip.ReduceAndCheckIfBanIP(addr)
 		return
 	}
 	tcpip.ValidRegisterPeer(addr)
@@ -244,7 +244,7 @@ func OnMessage(addr [4]byte, m []byte) {
 			defer merkleTrie.Destroy()
 			if err != nil {
 				log.Printf("ERROR: Base block verification failed for block %d: %v", index, err)
-				tcpip.BanIP(addr)
+				tcpip.ReduceAndCheckIfBanIP(addr)
 				services.AdjustShiftInPastInReset(hmax)
 				common.ShiftToPastMutex.RLock()
 				defer common.ShiftToPastMutex.RUnlock()
@@ -304,7 +304,7 @@ func OnMessage(addr [4]byte, m []byte) {
 					log.Printf("Detected %d missing transactions during fund transfer", len(hashesMissing))
 					transactionServices.SendGT(addr, hashesMissing, "bt")
 				} else {
-					tcpip.BanIP(addr)
+					tcpip.ReduceAndCheckIfBanIP(addr)
 				}
 				services.ResetAccountsAndBlocksSync(oldBlock.GetHeader().Height)
 				return

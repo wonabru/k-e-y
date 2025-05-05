@@ -38,7 +38,7 @@ func OnMessage(addr [4]byte, m []byte) {
 	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
 		log.Println("nonce msg validation fails")
-		tcpip.BanIP(addr)
+		tcpip.ReduceAndCheckIfBanIP(addr)
 		return
 	}
 	tcpip.ValidRegisterPeer(addr)
@@ -74,7 +74,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		isValid = transaction.Verify()
 		if isValid == false {
 			log.Println("nonce signature is invalid")
-			tcpip.BanIP(addr)
+			tcpip.ReduceAndCheckIfBanIP(addr)
 			return
 		}
 		//register checked Node IP
@@ -124,7 +124,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		// checking if enough coins staked
 		if _, sumStaked, operationalAcc := account.GetStakedInDelegatedAccount(n); int64(sumStaked) < common.MinStakingForNode || !bytes.Equal(operationalAcc.Address[:], mainAddress.GetBytes()) {
 			log.Println("not enough staked coins to be a node or not valid operational account")
-			tcpip.BanIP(addr)
+			tcpip.ReduceAndCheckIfBanIP(addr)
 			return
 		}
 
@@ -194,7 +194,7 @@ func OnMessage(addr [4]byte, m []byte) {
 				if err != nil {
 					log.Println(err)
 					log.Println("cannot load blocks from bytes")
-					tcpip.BanIP(addr)
+					tcpip.ReduceAndCheckIfBanIP(addr)
 					return
 				}
 
@@ -216,7 +216,7 @@ func OnMessage(addr [4]byte, m []byte) {
 				defer merkleTrie.Destroy()
 				if err != nil {
 					log.Println(err)
-					tcpip.BanIP(addr)
+					tcpip.ReduceAndCheckIfBanIP(addr)
 					return
 				}
 				hashesMissing := blocks.IsAllTransactions(newBlock)
@@ -230,7 +230,7 @@ func OnMessage(addr [4]byte, m []byte) {
 					services.ResetAccountsAndBlocksSync(lastBlock.GetHeader().Height)
 					common.IsSyncing.Store(false)
 					log.Println("check transfer transactions in block fails", err)
-					tcpip.BanIP(addr)
+					tcpip.ReduceAndCheckIfBanIP(addr)
 					return
 				}
 				err = newBlock.StoreBlock()

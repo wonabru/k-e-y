@@ -24,7 +24,7 @@ func OnMessage(addr [4]byte, m []byte) {
 	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
 		log.Println("transaction msg validation fails")
-		tcpip.BanIP(addr)
+		tcpip.ReduceAndCheckIfBanIP(addr)
 		return
 	}
 
