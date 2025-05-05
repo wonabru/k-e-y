@@ -185,15 +185,16 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 
 // ValidRegisterPeer Confirm that ip is valid node
 func ValidRegisterPeer(ip [4]byte) {
-	PeersMutex.Lock()
-	defer PeersMutex.Unlock()
-	if _, ok := validPeersConnected[ip]; ok {
-		//if n < common.ConnectionMaxTries {
-		//	validPeersConnected[ip]++
-		//}
-		return
+	if PeersMutex.TryLock() {
+		defer PeersMutex.Unlock()
+		if _, ok := validPeersConnected[ip]; ok {
+			//if n < common.ConnectionMaxTries {
+			//	validPeersConnected[ip]++
+			//}
+			return
+		}
+		validPeersConnected[ip] = common.ConnectionMaxTries
 	}
-	validPeersConnected[ip] = common.ConnectionMaxTries
 }
 
 // NodeRegisterPeer Confirm that ip is valid node IP
@@ -291,28 +292,29 @@ func GetPeersConnected(topic [2]byte) map[[6]byte][2]byte {
 }
 
 func GetIPsConnected() [][]byte {
-	PeersMutex.Lock()
-	defer PeersMutex.Unlock()
-	uniqueIPs := make(map[[4]byte]struct{})
-	for key, value := range nodePeersConnected {
-		if value > 1 {
-			if bytes.Equal(key[:], MyIP[:]) {
-				continue
+	if PeersMutex.TryLock() {
+		defer PeersMutex.Unlock()
+		uniqueIPs := make(map[[4]byte]struct{})
+		for key, value := range nodePeersConnected {
+			if value > 1 {
+				if bytes.Equal(key[:], MyIP[:]) {
+					continue
+				}
+				uniqueIPs[key] = struct{}{}
 			}
-			uniqueIPs[key] = struct{}{}
 		}
-	}
-	var ips [][]byte
-	for ip := range uniqueIPs {
-		ips = append(ips, ip[:])
-	}
-	PeersCount = len(ips)
-	// return one random peer only
-	if PeersCount > 0 {
-		rn := rand.Intn(PeersCount)
-		return [][]byte{ips[rn]}
-	} else {
-		return [][]byte{}
+		var ips [][]byte
+		for ip := range uniqueIPs {
+			ips = append(ips, ip[:])
+		}
+		PeersCount = len(ips)
+		// return one random peer only
+		if PeersCount > 0 {
+			rn := rand.Intn(PeersCount)
+			return [][]byte{ips[rn]}
+		} else {
+			return [][]byte{}
+		}
 	}
 }
 
@@ -324,23 +326,24 @@ func GetPeersCount() int {
 
 func LookUpForNewPeersToConnect(chanPeer chan []byte) {
 	for {
-		PeersMutex.Lock()
-		for topicip, topic := range peersConnected {
-			_, ok := oldPeers[topicip]
-			if ok == false {
-				log.Println("Found new peer with ip", topicip)
-				oldPeers[topicip] = topic
-				chanPeer <- topicip[:]
+		if PeersMutex.TryLock() {
+			for topicip, topic := range peersConnected {
+				_, ok := oldPeers[topicip]
+				if ok == false {
+					log.Println("Found new peer with ip", topicip)
+					oldPeers[topicip] = topic
+					chanPeer <- topicip[:]
+				}
 			}
-		}
-		for topicip := range oldPeers {
-			_, ok := peersConnected[topicip]
-			if ok == false {
-				log.Println("New peer is deleted with ip", topicip)
-				delete(oldPeers, topicip)
+			for topicip := range oldPeers {
+				_, ok := peersConnected[topicip]
+				if ok == false {
+					log.Println("New peer is deleted with ip", topicip)
+					delete(oldPeers, topicip)
+				}
 			}
+			PeersMutex.Unlock()
 		}
-		PeersMutex.Unlock()
 		time.Sleep(time.Second * 10)
 	}
 }

@@ -33,30 +33,31 @@ func BanIP(ip [4]byte) {
 	log.Println("BANNING ", ip)
 	bannedIP[ip] = common.GetCurrentTimeStampInSecond() + common.BannedTimeSeconds
 	bannedIPMutex.Unlock()
-	PeersMutex.Lock()
-	defer PeersMutex.Unlock()
-	if _, ok := validPeersConnected[ip]; ok {
-		delete(validPeersConnected, ip)
-	}
-	if _, ok := nodePeersConnected[ip]; ok {
-		delete(nodePeersConnected, ip)
-	}
-	tcpConns := tcpConnections[NonceTopic]
-	tcpConn, ok := tcpConns[ip]
-	if ok {
-		CloseAndRemoveConnection(tcpConn)
-		return
-	}
-	tcpConns = tcpConnections[TransactionTopic]
-	tcpConn, ok = tcpConns[ip]
-	if ok {
-		CloseAndRemoveConnection(tcpConn)
-		return
-	}
-	tcpConns = tcpConnections[SyncTopic]
-	tcpConn, ok = tcpConns[ip]
-	if ok {
-		CloseAndRemoveConnection(tcpConn)
-		return
+	if PeersMutex.TryLock() {
+		defer PeersMutex.Unlock()
+		if _, ok := validPeersConnected[ip]; ok {
+			delete(validPeersConnected, ip)
+		}
+		if _, ok := nodePeersConnected[ip]; ok {
+			delete(nodePeersConnected, ip)
+		}
+		tcpConns := tcpConnections[NonceTopic]
+		tcpConn, ok := tcpConns[ip]
+		if ok {
+			CloseAndRemoveConnection(tcpConn)
+			return
+		}
+		tcpConns = tcpConnections[TransactionTopic]
+		tcpConn, ok = tcpConns[ip]
+		if ok {
+			CloseAndRemoveConnection(tcpConn)
+			return
+		}
+		tcpConns = tcpConnections[SyncTopic]
+		tcpConn, ok = tcpConns[ip]
+		if ok {
+			CloseAndRemoveConnection(tcpConn)
+			return
+		}
 	}
 }
