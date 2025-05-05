@@ -2,7 +2,6 @@ package tcpip
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"golang.org/x/exp/rand"
@@ -184,20 +183,6 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 	return buf[:n]
 }
 
-// handleConnectionError logs different connection errors and tries to reconnect if necessary
-func handleConnectionError(err error, topic [2]byte, conn *net.TCPConn) {
-	switch {
-	case errors.Is(err, syscall.EPIPE), errors.Is(err, syscall.ECONNRESET), errors.Is(err, syscall.ECONNABORTED):
-		log.Print("This is a broken pipe error. Attempting to reconnect...")
-	case err == io.EOF:
-		log.Print("Connection closed by peer. Attempting to reconnect...")
-	default:
-		log.Printf("Unexpected error: %v", err)
-	}
-	// Close the current connection
-	//conn.Close()
-}
-
 // ValidRegisterPeer Confirm that ip is valid node
 func ValidRegisterPeer(ip [4]byte) {
 	PeersMutex.Lock()
@@ -265,17 +250,17 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 	defer PeersMutex.Unlock()
 
 	// Check if we already have a connection for this peer
-	if existingConn, ok := tcpConnections[topic][ip]; ok {
-		//log.Println("connection just exists")
-
-		// Try to close the existing connection if it's still open
-		if existingConn != nil {
-			//log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
-			existingConn.Close()
-		}
-		// Remove the old connection from our maps
-		delete(tcpConnections[topic], ip)
-		delete(peersConnected, topicipBytes)
+	if _, ok := tcpConnections[topic][ip]; ok {
+		log.Println("connection just exists")
+		return true
+		//// Try to close the existing connection if it's still open
+		//if existingConn != nil {
+		//	//log.Printf("Closing existing connection for peer %v on topic %v", ip, topic)
+		//	existingConn.Close()
+		//}
+		//// Remove the old connection from our maps
+		//delete(tcpConnections[topic], ip)
+		//delete(peersConnected, topicipBytes)
 	}
 
 	log.Printf("Registering new connection from address %s on topic %v", ra[0], topic)
