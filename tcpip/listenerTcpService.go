@@ -2,6 +2,7 @@ package tcpip
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
@@ -103,52 +104,63 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 				log.Println("wrong message")
 				continue
 			}
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+
 			PeersMutex.Lock()
+			select {
+			case <-ctx.Done():
+				// Handle timeout
+				PeersMutex.Unlock()
+				log.Println("timeout in sending")
+				cancel()
+				continue
+			default:
 
-			if bytes.Equal(ipr[:], []byte{0, 0, 0, 0}) {
+				if bytes.Equal(ipr[:], []byte{0, 0, 0, 0}) {
 
-				tmpConn := tcpConnections[topic]
-				for k, tcpConn0 := range tmpConn {
-					if _, ok := validPeersConnected[k]; ok {
-						ReduceTrustRegisterPeer(k)
-					}
-					if _, ok := validPeersConnected[k]; !ok {
-						log.Println("when send to all, remove connection")
-						CloseAndRemoveConnection(tcpConn0)
-					} else if !bytes.Equal(k[:], MyIP[:]) {
-						//log.Println("send to ipr", k)
-						err := Send(tcpConn0, s[4:])
-						if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
-							log.Println("error in sending to all ", err)
+					tmpConn := tcpConnections[topic]
+					for k, tcpConn0 := range tmpConn {
+						if _, ok := validPeersConnected[k]; ok {
+							ReduceTrustRegisterPeer(k)
+						}
+						if _, ok := validPeersConnected[k]; !ok {
+							log.Println("when send to all, remove connection")
 							CloseAndRemoveConnection(tcpConn0)
+						} else if !bytes.Equal(k[:], MyIP[:]) {
+							//log.Println("send to ipr", k)
+							err := Send(tcpConn0, s[4:])
+							if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
+								log.Println("error in sending to all ", err)
+								CloseAndRemoveConnection(tcpConn0)
+							}
 						}
 					}
-				}
-			} else {
-				tcpConns := tcpConnections[topic]
-				tcpConn, ok := tcpConns[ipr]
-
-				if _, ok2 := validPeersConnected[ipr]; ok2 {
-					ReduceTrustRegisterPeer(ipr)
-				}
-				if _, ok2 := validPeersConnected[ipr]; !ok2 {
-					log.Println("when send to ", ipr, " remove connection")
-					CloseAndRemoveConnection(tcpConn)
-				} else if ok {
-					//log.Println("send to ip", ipr)
-					err := Send(tcpConn, s[4:])
-					if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
-						log.Println("error in sending to ", ipr, err)
-						CloseAndRemoveConnection(tcpConn)
-					}
 				} else {
-					//fmt.Println("no connection to given ip", ipr, topic)
-					//BanIP(ipr, topic)
+					tcpConns := tcpConnections[topic]
+					tcpConn, ok := tcpConns[ipr]
+
+					if _, ok2 := validPeersConnected[ipr]; ok2 {
+						ReduceTrustRegisterPeer(ipr)
+					}
+					if _, ok2 := validPeersConnected[ipr]; !ok2 {
+						log.Println("when send to ", ipr, " remove connection")
+						CloseAndRemoveConnection(tcpConn)
+					} else if ok {
+						//log.Println("send to ip", ipr)
+						err := Send(tcpConn, s[4:])
+						if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
+							log.Println("error in sending to ", ipr, err)
+							CloseAndRemoveConnection(tcpConn)
+						}
+					} else {
+						//fmt.Println("no connection to given ip", ipr, topic)
+						//BanIP(ipr, topic)
+					}
+
 				}
-
+				PeersMutex.Unlock()
+				cancel()
 			}
-			PeersMutex.Unlock()
-
 		case b := <-waitChan:
 			if bytes.Equal(b, topic[:]) {
 				time.Sleep(time.Millisecond * 10)
