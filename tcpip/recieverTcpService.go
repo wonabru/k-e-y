@@ -185,28 +185,27 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 
 // ValidRegisterPeer Confirm that ip is valid node
 func ValidRegisterPeer(ip [4]byte) {
-	if PeersMutex.TryLock() {
-		defer PeersMutex.Unlock()
-		if _, ok := validPeersConnected[ip]; ok {
-			//if n < common.ConnectionMaxTries {
-			//	validPeersConnected[ip]++
-			//}
-			return
+	PeersMutex.Lock()
+	defer PeersMutex.Unlock()
+	if n, ok := validPeersConnected[ip]; ok {
+		if n < 3 {
+			validPeersConnected[ip]++
 		}
-		validPeersConnected[ip] = common.ConnectionMaxTries
+		return
 	}
+	validPeersConnected[ip] = common.ConnectionMaxTries
+
 }
 
 // NodeRegisterPeer Confirm that ip is valid node IP
 func NodeRegisterPeer(ip [4]byte) {
-	if PeersMutex.TryLock() {
-		defer PeersMutex.Unlock()
-		if _, ok := nodePeersConnected[ip]; ok {
-			validPeersConnected[ip] = common.ConnectionMaxTries
-			return
-		}
-		nodePeersConnected[ip] = common.ConnectionMaxTries
+	PeersMutex.Lock()
+	defer PeersMutex.Unlock()
+	if _, ok := nodePeersConnected[ip]; ok {
+		validPeersConnected[ip] = common.ConnectionMaxTries
+		return
 	}
+	nodePeersConnected[ip] = common.ConnectionMaxTries
 }
 
 // ReduceTrustRegisterPeer limit connections attempts needs to be peer lock

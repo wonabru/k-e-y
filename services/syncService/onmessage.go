@@ -244,11 +244,13 @@ func OnMessage(addr [4]byte, m []byte) {
 			defer merkleTrie.Destroy()
 			if err != nil {
 				log.Printf("ERROR: Base block verification failed for block %d: %v", index, err)
+				tcpip.BanIP(addr)
 				services.AdjustShiftInPastInReset(hmax)
 				common.ShiftToPastMutex.RLock()
 				defer common.ShiftToPastMutex.RUnlock()
 				services.ResetAccountsAndBlocksSync(index - common.ShiftToPastInReset)
 				panic(err)
+
 			}
 			merkleTries[index] = merkleTrie
 			hashesMissing := blocks.IsAllTransactions(block)
@@ -301,6 +303,8 @@ func OnMessage(addr [4]byte, m []byte) {
 				if len(hashesMissing) > 0 {
 					log.Printf("Detected %d missing transactions during fund transfer", len(hashesMissing))
 					transactionServices.SendGT(addr, hashesMissing, "bt")
+				} else {
+					tcpip.BanIP(addr)
 				}
 				services.ResetAccountsAndBlocksSync(oldBlock.GetHeader().Height)
 				return
