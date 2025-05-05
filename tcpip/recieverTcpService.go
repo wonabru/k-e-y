@@ -327,24 +327,24 @@ func GetPeersCount() int {
 
 func LookUpForNewPeersToConnect(chanPeer chan []byte) {
 	for {
-		if PeersMutex.TryLock() {
-			for topicip, topic := range peersConnected {
-				_, ok := oldPeers[topicip]
-				if ok == false {
-					log.Println("Found new peer with ip", topicip)
-					oldPeers[topicip] = topic
-					chanPeer <- topicip[:]
-				}
+		PeersMutex.Lock()
+		for topicip, topic := range peersConnected {
+			_, ok := oldPeers[topicip]
+			if ok == false {
+				log.Println("Found new peer with ip", topicip)
+				oldPeers[topicip] = topic
+				chanPeer <- topicip[:]
 			}
-			for topicip := range oldPeers {
-				_, ok := peersConnected[topicip]
-				if ok == false {
-					log.Println("New peer is deleted with ip", topicip)
-					delete(oldPeers, topicip)
-				}
-			}
-			PeersMutex.Unlock()
 		}
+		for topicip := range oldPeers {
+			_, ok := peersConnected[topicip]
+			if ok == false {
+				log.Println("New peer is deleted with ip", topicip)
+				delete(oldPeers, topicip)
+			}
+		}
+		PeersMutex.Unlock()
+
 		time.Sleep(time.Second * 10)
 	}
 }
