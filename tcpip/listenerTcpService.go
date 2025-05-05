@@ -265,6 +265,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 					continue
 				}
 				reconnectionTries++
+				time.Sleep(time.Millisecond * 10)
 				continue
 			}
 			if bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {

@@ -144,7 +144,7 @@ func Accept(topic [2]byte, conn *net.TCPListener) (*net.TCPConn, error) {
 		tcpConn.Close()
 		return nil, nil
 	}
-	//tcpConn.SetKeepAlive(true)
+	tcpConn.SetKeepAlive(true)
 	return tcpConn, nil
 }
 
@@ -173,7 +173,7 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 
 	if err != nil {
 		if err == io.EOF {
-			return nil
+			return []byte("<-CLS->")
 		}
 		log.Println("n=", n, "err", err.Error())
 		//handleConnectionError(err, topic, conn)
