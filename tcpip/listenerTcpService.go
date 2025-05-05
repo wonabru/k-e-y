@@ -120,12 +120,12 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 
 					tmpConn := tcpConnections[topic]
 					for k, tcpConn0 := range tmpConn {
-						if _, ok := validPeersConnected[k]; ok {
-							ReduceTrustRegisterPeer(k)
-						}
+						//if _, ok := validPeersConnected[k]; ok {
+						//	ReduceTrustRegisterPeer(k)
+						//}
 						if _, ok := validPeersConnected[k]; !ok {
-							log.Println("when send to all, remove connection")
-							CloseAndRemoveConnection(tcpConn0)
+							log.Println("when send to all, ignore connection", k)
+							//CloseAndRemoveConnection(tcpConn0)
 						} else if !bytes.Equal(k[:], MyIP[:]) {
 							//log.Println("send to ipr", k)
 							err := Send(tcpConn0, s[4:])
@@ -139,12 +139,12 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 					tcpConns := tcpConnections[topic]
 					tcpConn, ok := tcpConns[ipr]
 
-					if _, ok2 := validPeersConnected[ipr]; ok2 {
-						ReduceTrustRegisterPeer(ipr)
-					}
+					//if _, ok2 := validPeersConnected[ipr]; ok2 {
+					//	ReduceTrustRegisterPeer(ipr)
+					//}
 					if _, ok2 := validPeersConnected[ipr]; !ok2 {
-						log.Println("when send to ", ipr, " remove connection")
-						CloseAndRemoveConnection(tcpConn)
+						log.Println("ignore when send to ", ipr)
+						//CloseAndRemoveConnection(tcpConn)
 					} else if ok {
 						//log.Println("send to ip", ipr)
 						err := Send(tcpConn, s[4:])
