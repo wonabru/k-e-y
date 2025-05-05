@@ -303,8 +303,6 @@ func OnMessage(addr [4]byte, m []byte) {
 				if len(hashesMissing) > 0 {
 					log.Printf("Detected %d missing transactions during fund transfer", len(hashesMissing))
 					transactionServices.SendGT(addr, hashesMissing, "bt")
-				} else {
-					tcpip.ReduceAndCheckIfBanIP(addr)
 				}
 				services.ResetAccountsAndBlocksSync(oldBlock.GetHeader().Height)
 				return

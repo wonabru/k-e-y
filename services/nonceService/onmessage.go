@@ -230,7 +230,6 @@ func OnMessage(addr [4]byte, m []byte) {
 					services.ResetAccountsAndBlocksSync(lastBlock.GetHeader().Height)
 					common.IsSyncing.Store(false)
 					log.Println("check transfer transactions in block fails", err)
-					tcpip.ReduceAndCheckIfBanIP(addr)
 					return
 				}
 				err = newBlock.StoreBlock()
