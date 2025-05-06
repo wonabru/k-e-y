@@ -32,7 +32,7 @@ func main() {
 	wallet.InitActiveWallet(0, "a")
 	MainWallet = wallet.GetActiveWallet()
 
-	for range 10 {
+	for range 2 {
 		go sendTransactions(MainWallet)
 		//time.Sleep(time.Millisecond * 1)
 	}

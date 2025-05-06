@@ -16,10 +16,10 @@ func RemoveBadTransactionByHash(hash []byte, height int64) error {
 		log.Println(err)
 	}
 	//TODO
-	//err = transactionsDefinition.RemoveTransactionFromDBbyHash(common.TransactionDBPrefix[:], hash)
-	//if err != nil {
-	//	log.Println(err)
-	//}
+	err = transactionsDefinition.RemoveTransactionFromDBbyHash(common.TransactionDBPrefix[:], hash)
+	if err != nil {
+		log.Println(err)
+	}
 	err = CheckTransactionInDBAndInMarkleTrie(hash)
 	if err == nil {
 		log.Println("transaction is in trie")
