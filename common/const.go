@@ -26,7 +26,7 @@ var (
 	MaxTransactionsPerBlock        int16   = 5000 // on average 500 TPS
 	MaxTransactionInPool                   = 10000
 	MaxPeersConnected              int     = 6
-	NumberOfHashesInBucket         int64   = 32
+	NumberOfHashesInBucket         int64   = 20
 	NumberOfBlocksInBucket         int64   = 20
 	MaxNumberOfTxBans              int     = 60480
 	MinStakingForNode              int64   = 100000000000000
@@ -37,8 +37,8 @@ var (
 	MaxTransactionInMultiSigPool   int64   = 60480        //one week
 	ConnectionMaxTries                     = 10
 	BannedTimeSeconds              int64   = 60                  // 1 minute
-	MessageInitialization                  = [4]byte{0, 0, 0, 2} // will be overwrite in init() by MaxMessageSizeBytes
-	MaxMessageSizeBytes            int32   = 33554432            // should be adjusted to maximal message sent
+	MessageInitialization                  = [4]byte{2, 0, 2, 9} // will be overwrite in init() by MaxMessageSizeBytes
+	MaxMessageSizeBytes            int32   = 151126018           // should be adjusted to maximal message sent
 	DefaultWalletHomePath                  = "/.okura/db/wallet/"
 	DefaultBlockchainHomePath              = "/.okura/db/blockchain/"
 	ConnectionsWithoutVerification         = [][]byte{[]byte("TRAN"), []byte("STAT"), []byte("ENCR"), []byte("DETS"), []byte("STAK"), []byte("ADEX")}
@@ -133,8 +133,9 @@ func GetMyRewardPercentage() int16 {
 }
 
 func init() {
+
 	if !bytes.Equal(MessageInitialization[:], GetByteInt32(MaxMessageSizeBytes)) {
-		log.Fatal("set proper MessageInitialization that fit to MaxMessageSizeBytes. Must be: common.MessageInitialization == GetByteInt32(common.MaxMessageSizeBytes)")
+		log.Fatal("set proper MessageInitialization that fit to MaxMessageSizeBytes. Must be: common.MessageInitialization == GetByteInt32(common.MaxMessageSizeBytes)", GetInt32FromByte(MessageInitialization[:]), GetByteInt32(MaxMessageSizeBytes))
 	}
 	enc1 := oqs.NewConfigEnc1()
 	fmt.Print(enc1.ToString())

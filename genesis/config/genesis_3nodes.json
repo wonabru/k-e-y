@@ -13,7 +13,7 @@
     "max_transactions_per_block": 5000,
     "max_transaction_in_pool": 10000,
     "max_peers_connected": 6,
-    "number_of_hashes_in_bucket": 32,
+    "number_of_hashes_in_bucket": 20,
     "number_of_blocks_in_bucket": 20,
     "min_staking_for_node": 100000000000000,
     "min_staking_user": 100000000000,
