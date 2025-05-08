@@ -194,7 +194,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			break
 		}
 		log.Printf("Connection attempt %d to %s failed: %v", i+1, ipport, err)
-		if i < maxRetries-1 {
+		if i <= maxRetries-1 {
 			time.Sleep(time.Second * 2)
 			PeersMutex.Lock()
 			ReduceTrustRegisterPeer(ip)
