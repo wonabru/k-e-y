@@ -194,18 +194,18 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			break
 		}
 		log.Printf("Connection attempt %d to %s failed: %v", i+1, ipport, err)
-		if i <= maxRetries-1 {
-			time.Sleep(time.Second * 2)
-			PeersMutex.Lock()
-			ReduceTrustRegisterPeer(ip)
-			trust, ok := validPeersConnected[ip]
-			PeersMutex.Unlock()
-			if ok && trust <= 0 {
-				BanIP(ip)
-			} else if i == maxRetries-1 {
-				BanIP(ip)
-			}
+
+		time.Sleep(time.Second * 2)
+		PeersMutex.Lock()
+		ReduceTrustRegisterPeer(ip)
+		trust, ok := validPeersConnected[ip]
+		PeersMutex.Unlock()
+		if ok && trust <= 0 {
+			BanIP(ip)
+		} else if i == maxRetries-1 {
+			BanIP(ip)
 		}
+
 	}
 
 	if err != nil {
