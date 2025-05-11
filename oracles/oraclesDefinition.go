@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/common"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sort"
 	"sync"
 )
@@ -203,7 +203,7 @@ func VerifyRandOracle(height int64, totalStaked int64, randBlock int64, randData
 
 	if staked <= 2*totalStaked/3 {
 		if randBlock == 0 {
-			log.Println("rand oracle is 0 , cannot be established")
+			logger.GetLogger().Println("rand oracle is 0 , cannot be established")
 			return true
 		}
 		return false
@@ -232,7 +232,7 @@ func VerifyPriceOracle(height int64, totalStaked int64, priceBlock int64, priceD
 
 	if staked <= 2*totalStaked/3 {
 		if priceBlock == 0 {
-			log.Println("price oracle is 0 , cannot be established")
+			logger.GetLogger().Println("price oracle is 0 , cannot be established")
 			return true
 		}
 		return false

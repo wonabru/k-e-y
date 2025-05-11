@@ -3,7 +3,7 @@ package account
 import (
 	"bytes"
 	"fmt"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 
 	"github.com/okuralabs/okura-node/common"
@@ -95,7 +95,7 @@ func StoreAccounts(height int64) error {
 	prefix := append(common.AccountsDBPrefix[:], hb...)
 	err := database.MainDB.Put(prefix, k[:])
 	if err != nil {
-		log.Println("cannot store accounts", err)
+		logger.GetLogger().Println("cannot store accounts", err)
 		return err
 	}
 	return nil
@@ -106,7 +106,7 @@ func RemoveAccountsFromDB(height int64) error {
 	prefix := append(common.AccountsDBPrefix[:], hb...)
 	err := database.MainDB.Delete(prefix)
 	if err != nil {
-		log.Println("cannot remove account", err)
+		logger.GetLogger().Println("cannot remove account", err)
 		return err
 	}
 	return nil
@@ -119,7 +119,7 @@ func LoadAccounts(height int64) error {
 	if height < 0 {
 		height, err = LastHeightStoredInAccounts()
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 
@@ -127,12 +127,12 @@ func LoadAccounts(height int64) error {
 	prefix := append(common.AccountsDBPrefix[:], hb...)
 	b, err := database.MainDB.Get(prefix)
 	if err != nil || b == nil {
-		log.Println("cannot load accounts", err)
+		logger.GetLogger().Println("cannot load accounts", err)
 		return err
 	}
 	err = (&Accounts).Unmarshal(b)
 	if err != nil {
-		log.Println("cannot unmarshal accounts")
+		logger.GetLogger().Println("cannot unmarshal accounts")
 		return err
 	}
 	return nil

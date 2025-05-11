@@ -3,8 +3,8 @@ package blocks
 import (
 	"bytes"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/voting"
-	"log"
 	"sync"
 )
 
@@ -27,7 +27,7 @@ func ProcessBlockEncryption(block Block, lastBlock Block) error {
 			return err
 		}
 
-		log.Println("new encryption: ", enc1.ToString())
+		logger.GetLogger().Println("new encryption: ", enc1.ToString())
 		SetVoteEncryption(block.BaseBlock.BaseHeader.Encryption1[:], true)
 		voting.ResetLastVoting()
 
@@ -62,7 +62,7 @@ func SetVoteEncryption(enc []byte, primary bool) {
 	VoteChannelMutex.Lock()
 	defer VoteChannelMutex.Unlock()
 	VoteChannel <- enc1
-	log.Println(string(<-VoteChannel))
+	logger.GetLogger().Println(string(<-VoteChannel))
 }
 
 func SetEncryptionFromBlock(height int64) error {

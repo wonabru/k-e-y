@@ -52,7 +52,7 @@ func SignMessage(line []byte) []byte {
 	}
 	if verificationNeeded {
 		if MainWallet == nil || (!MainWallet.Check() || !MainWallet.Check2()) {
-			log.Println("wallet not loaded yet")
+			logger.GetLogger().Println("wallet not loaded yet")
 			return line
 		}
 		if common.IsPaused() == false {
@@ -60,7 +60,7 @@ func SignMessage(line []byte) []byte {
 			line = common.BytesToLenAndBytes(line)
 			sign, err := MainWallet.Sign(line, true)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 				return line
 			}
 			line = append(line, sign.GetBytes()...)
@@ -70,7 +70,7 @@ func SignMessage(line []byte) []byte {
 			line = common.BytesToLenAndBytes(line)
 			sign, err := MainWallet.Sign(line, false)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 				return line
 			}
 			line = append(line, sign.GetBytes()...)
@@ -126,11 +126,11 @@ func SampleTransaction(w *wallet.Wallet) transactionsDefinition.Transaction {
 
 	err = t.CalcHashAndSet()
 	if err != nil {
-		log.Println("calc hash error", err)
+		logger.GetLogger().Println("calc hash error", err)
 	}
 	err = t.Sign(w, w.PublicKey.Primary)
 	if err != nil {
-		log.Println("Signing error", err)
+		logger.GetLogger().Println("Signing error", err)
 	}
 	//s := rand.RandomBytes(common.SignatureLength)
 	//sig := common.Signature{}
@@ -165,8 +165,8 @@ func sendTransactions(w *wallet.Wallet) {
 		tmm := m.GetBytes()
 		//count += int64(batchSize)
 		clientrpc.InRPC <- SignMessage(append([]byte("TRAN"), tmm...))
-		//log.Printf("send batch %d transactions", batchSize)
+		//logger.GetLogger().Printf("send batch %d transactions", batchSize)
 		<-clientrpc.OutRPC
-		//log.Println("transactions sent")
+		//logger.GetLogger().Println("transactions sent")
 	}
 }

@@ -3,7 +3,7 @@ package transactionsDefinition
 import (
 	"bytes"
 	"fmt"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"strconv"
 
 	"github.com/okuralabs/okura-node/account"
@@ -206,7 +206,7 @@ func LoadFromDBPoolTx(prefix []byte, hashTransaction []byte) (Transaction, error
 			return Transaction{}, err
 		}
 		return Transaction{}, fmt.Errorf("in database transaction has no bytes stored: %v", hashTransaction)
-		//log.Println("in database transaction has no bytes stored")
+		//logger.GetLogger().Println("in database transaction has no bytes stored")
 	}
 	mt := &Transaction{}
 	at, restb, err := mt.GetFromBytes(bt)
@@ -214,7 +214,7 @@ func LoadFromDBPoolTx(prefix []byte, hashTransaction []byte) (Transaction, error
 		return Transaction{}, err
 	}
 	if len(restb) > 0 {
-		log.Println("len(restb)", len(restb))
+		logger.GetLogger().Println("len(restb)", len(restb))
 	}
 	return at, nil
 }
@@ -233,30 +233,30 @@ func (tx *Transaction) Verify() bool {
 	recipientAddress := tx.TxData.Recipient
 	n, err := account.IntDelegatedAccountFromAddress(recipientAddress)
 	if tx.GetData().Amount < 0 && err != nil && n < 512 {
-		log.Println("transaction amount has to be larger or equal 0")
+		logger.GetLogger().Println("transaction amount has to be larger or equal 0")
 		return false
 	}
 	if tx.GetLockedAmount() > 0 {
 		n, err := account.IntDelegatedAccountFromAddress(tx.GetDelegatedAccountForLocking())
 
 		if n < 0 || n > 256 || err != nil {
-			log.Println("transaction locking must have delegated account properly set")
+			logger.GetLogger().Println("transaction locking must have delegated account properly set")
 			return false
 		}
 		if tx.GetLockedAmount() < 0 {
-			log.Println("transaction locked amount has to be larger or equal 0")
+			logger.GetLogger().Println("transaction locked amount has to be larger or equal 0")
 			return false
 		}
 		if tx.GetLockedAmount() > tx.GetData().Amount {
-			log.Println("transaction locked amount has to be less or equal amount")
+			logger.GetLogger().Println("transaction locked amount has to be less or equal amount")
 			return false
 		}
 		if tx.GetReleasePerBlock() < 0 {
-			log.Println("transaction release amount per block has to be larger or equal 0")
+			logger.GetLogger().Println("transaction release amount per block has to be larger or equal 0")
 			return false
 		}
 		if tx.GetReleasePerBlock() > tx.GetLockedAmount() {
-			log.Println("transaction release amount per block has to be less or equal locked amount")
+			logger.GetLogger().Println("transaction release amount per block has to be less or equal locked amount")
 			return false
 		}
 	}
@@ -264,25 +264,25 @@ func (tx *Transaction) Verify() bool {
 	canAccountBeModified := account.CanBeModifiedAccount(tx.TxData.Recipient.GetBytes())
 
 	if canAccountBeModified == false && (tx.TxData.EscrowTransactionsDelay > 0 || tx.TxData.MultiSignNumber > 0) {
-		log.Println("Account cannot be modified")
+		logger.GetLogger().Println("Account cannot be modified")
 		return false
 	}
 
 	//escrow check
 	if tx.TxData.EscrowTransactionsDelay > 0 {
 		if tx.TxData.EscrowTransactionsDelay > common.MaxTransactionDelay {
-			log.Println("transaction delay has to be less than ", common.MaxTransactionDelay)
+			logger.GetLogger().Println("transaction delay has to be less than ", common.MaxTransactionDelay)
 			return false
 		}
 	} else if tx.TxData.EscrowTransactionsDelay < 0 {
-		log.Println("transaction delay must be larger than 0")
+		logger.GetLogger().Println("transaction delay must be larger than 0")
 		return false
 	}
 
 	// multisign check
 	if tx.TxData.MultiSignNumber > 0 {
 		if int(tx.TxData.MultiSignNumber) > len(tx.TxData.MultiSignAddresses) {
-			log.Println("number of signatures cannot overflow number of defined addresses in multi sign account")
+			logger.GetLogger().Println("number of signatures cannot overflow number of defined addresses in multi sign account")
 			return false
 		}
 	}
@@ -292,7 +292,7 @@ func (tx *Transaction) Verify() bool {
 		return false
 	}
 	if !bytes.Equal(b, tx.GetHash().GetBytes()) {
-		log.Println("check transaction hash fails")
+		logger.GetLogger().Println("check transaction hash fails")
 		return false
 	}
 	signature := tx.GetSignature()
@@ -341,7 +341,7 @@ func EmptyTransaction() Transaction {
 	}
 	err := tx.CalcHashAndSet()
 	if err != nil {
-		log.Println("empty transaction calc hash fails")
+		logger.GetLogger().Println("empty transaction calc hash fails")
 	}
 	tx.Signature = common.EmptySignature()
 	return tx

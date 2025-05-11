@@ -7,13 +7,13 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"github.com/okuralabs/okura-node/logger"
 	"os"
 	"strconv"
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/wonabru/bip39"
 	"io"
-	"log"
 	"sync"
 
 	"github.com/okuralabs/okura-node/common"
@@ -55,11 +55,11 @@ func InitActiveWallet(walletNumber uint8, password string) {
 	var err error
 	activeWallet, err = Load(walletNumber, password)
 	if err != nil {
-		log.Println("wrong password")
+		logger.GetLogger().Println("wrong password")
 		os.Exit(1)
 	}
 	if activeWallet == nil {
-		log.Println("failed to load wallet")
+		logger.GetLogger().Println("failed to load wallet")
 		os.Exit(1)
 	}
 }
@@ -110,7 +110,7 @@ func (w *Wallet) GetSigName(primary bool) string {
 func EmptyWallet(walletNumber uint8, sigName, sigName2 string) *Wallet {
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	return &Wallet{
 		password:      "",
@@ -239,7 +239,7 @@ func (w *Wallet) AddNewEncryptionToActiveWallet(sigName string, primary bool) er
 		(*w).HomePath2 = ew.HomePath2
 	}
 
-	log.Println(signer.Details())
+	logger.GetLogger().Println(signer.Details())
 	return nil
 }
 
@@ -254,7 +254,7 @@ func generateNewIv() []byte {
 func (w *Wallet) encrypt(v []byte) ([]byte, error) {
 	cb, err := aes.NewCipher(w.passwordBytes)
 	if err != nil {
-		log.Println("Can not create AES function")
+		logger.GetLogger().Println("Can not create AES function")
 		return []byte{}, err
 	}
 	v = append([]byte("validationTag"), v...)
@@ -267,7 +267,7 @@ func (w *Wallet) encrypt(v []byte) ([]byte, error) {
 func (w *Wallet) decrypt(v []byte) ([]byte, error) {
 	cb, err := aes.NewCipher(w.passwordBytes)
 	if err != nil {
-		log.Println("Can not create AES function")
+		logger.GetLogger().Println("Can not create AES function")
 		return []byte{}, err
 	}
 
@@ -298,7 +298,7 @@ func (w *Wallet) GetMnemonicWords(primary bool) (string, error) {
 		return "", fmt.Errorf("secret must be less than 64 bytes")
 	}
 	if secretLength < 64 {
-		log.Println("not all mnemonic words are important. secret is less than 64 bytes")
+		logger.GetLogger().Println("not all mnemonic words are important. secret is less than 64 bytes")
 		secretTmp := make([]byte, 64)
 		copy(secretTmp, secret)
 		secret = secretTmp[:]
@@ -307,7 +307,7 @@ func (w *Wallet) GetMnemonicWords(primary bool) (string, error) {
 
 	secretKey, _ := bip39.MnemonicToByteArray(mnemonic)
 	if !bytes.Equal(secretKey[:secretLength], secret[:secretLength]) {
-		log.Println("Can not restore secret key from mnemonic")
+		logger.GetLogger().Println("Can not restore secret key from mnemonic")
 		return "", fmt.Errorf("can not restore secret key from mnemonic")
 	}
 	return mnemonic, nil
@@ -316,7 +316,7 @@ func (w *Wallet) GetMnemonicWords(primary bool) (string, error) {
 func (w *Wallet) RestoreSecretKeyFromMnemonic(mnemonic string, primary bool) error {
 	secretKey, err := bip39.MnemonicToByteArray(mnemonic)
 	if err != nil {
-		log.Println("Can not restore secret key")
+		logger.GetLogger().Println("Can not restore secret key")
 		return err
 	}
 	var signer oqs.Signature
@@ -386,7 +386,7 @@ func (w *Wallet) Store(makeBackup bool) error {
 
 	se, err := w.encrypt(w.secretKey.GetBytes())
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return err
 	}
 
@@ -421,7 +421,7 @@ func (w *Wallet) Store(makeBackup bool) error {
 
 	se, err = w.encrypt(w2.secretKey2.GetBytes())
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return err
 	}
 
@@ -430,7 +430,7 @@ func (w *Wallet) Store(makeBackup bool) error {
 
 	wm, err := json.Marshal(&w2)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return err
 	}
 	prefix := common.WalletDBPrefix
@@ -481,13 +481,13 @@ func Load(walletNumber uint8, password string) (*Wallet, error) {
 
 	err = json.Unmarshal(value, w)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return nil, err
 	}
 	w.SetPassword(password)
 	ds, err := w.decrypt(w.EncryptedSecretKey)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return nil, err
 	}
 	err = w.secretKey.Init(ds[:common.PrivateKeyLength()], w.Address)
@@ -520,7 +520,7 @@ func Load(walletNumber uint8, password string) (*Wallet, error) {
 
 	err = json.Unmarshal(value, w)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return nil, err
 	}
 	w.MainAddress.Primary = true
@@ -533,7 +533,7 @@ func Load(walletNumber uint8, password string) (*Wallet, error) {
 	w.SetPassword(password)
 	ds, err = w.decrypt(w.EncryptedSecretKey2)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return nil, err
 	}
 	err = w.secretKey2.Init(ds[:common.PrivateKeyLength2()], w.Address2)
@@ -548,9 +548,9 @@ func Load(walletNumber uint8, password string) (*Wallet, error) {
 	(*w).signer2 = signer2
 	(*w).HomePath = homePath
 
-	log.Println("PubKey:", w.PublicKey.GetHex())
-	log.Println("PubKey2:", w.PublicKey2.GetHex())
-	log.Println("MainAddress:", w.MainAddress.GetHex())
+	logger.GetLogger().Println("PubKey:", w.PublicKey.GetHex())
+	logger.GetLogger().Println("PubKey2:", w.PublicKey2.GetHex())
+	logger.GetLogger().Println("MainAddress:", w.MainAddress.GetHex())
 	return w, err
 }
 
@@ -587,7 +587,7 @@ func (w *Wallet) ChangePassword(password, newPassword string) error {
 
 	err := w2.Store(false)
 	if err != nil {
-		log.Println("Can not store new wallet")
+		logger.GetLogger().Println("Can not store new wallet")
 		return err
 	}
 	_, err = Load(w2.WalletNumber, newPassword)

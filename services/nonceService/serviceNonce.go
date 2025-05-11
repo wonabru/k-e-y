@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/okuralabs/okura-node/blocks"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/message"
 	"github.com/okuralabs/okura-node/pubkeys"
 	"github.com/okuralabs/okura-node/services"
@@ -12,7 +13,6 @@ import (
 	"github.com/okuralabs/okura-node/voting"
 	"github.com/okuralabs/okura-node/wallet"
 	"golang.org/x/exp/rand"
-	"log"
 	"sync"
 	"time"
 )
@@ -54,7 +54,7 @@ func InitChannelVoting(voteChan chan []byte) {
 			}
 			err := blocks.SetEncryptionFromBytes(s[1:], primary)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 				voteChan <- []byte(err.Error())
 			} else {
 
@@ -129,7 +129,7 @@ func generateNonceMsg(topic [2]byte) (message.TransactionsMessage, error) {
 		}
 		isAddr := pktrie.IsAddressInTree(w.Address2)
 		if !isAddr {
-			log.Println("no address2 in blockchain")
+			logger.GetLogger().Println("no address2 in blockchain")
 			pubkey = w.PublicKey2
 		}
 	}
@@ -187,7 +187,7 @@ Q:
 			}
 		case <-timeout:
 			// Handle timeout
-			//log.Println("sendNonceMsgInLoopSelf: Timeout occurred")
+			//logger.GetLogger().Println("sendNonceMsgInLoopSelf: Timeout occurred")
 			// You can break the loop or return from the function here
 			break
 		}
@@ -201,11 +201,11 @@ func sendNonceMsg(ip [4]byte, topic [2]byte) {
 	}
 	n, err := generateNonceMsg(topic)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return
 	}
 	if !Send(ip, n.GetBytes()) {
-		log.Println("could not send nonce message")
+		logger.GetLogger().Println("could not send nonce message")
 	}
 }
 
@@ -236,7 +236,7 @@ func StartSubscribingNonceMsg(ip [4]byte) {
 	quit := false
 	var ipr [4]byte
 	go tcpip.StartNewConnection(ip, recvChan, tcpip.NonceTopic)
-	log.Println("Enter connection receiving loop (nonce msg)", ip)
+	logger.GetLogger().Println("Enter connection receiving loop (nonce msg)", ip)
 	for !quit {
 		select {
 		case s := <-recvChan:
@@ -263,7 +263,7 @@ func StartSubscribingNonceMsg(ip [4]byte) {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	log.Println("Exit connection receiving loop (nonce msg)", ip)
+	logger.GetLogger().Println("Exit connection receiving loop (nonce msg)", ip)
 }
 
 func sendReply(addr [4]byte) {
@@ -271,11 +271,11 @@ func sendReply(addr [4]byte) {
 	var topic = [2]byte{'N', 'N'}
 	n, err := generateNonceMsg(topic)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return
 	}
 	if Send(addr, n.GetBytes()) {
-		log.Println("send reply to node ", addr, " my ip ", tcpip.MyIP)
+		logger.GetLogger().Println("send reply to node ", addr, " my ip ", tcpip.MyIP)
 	}
 }
 
@@ -286,7 +286,7 @@ func StartSubscribingNonceMsgSelf() {
 	var ip [4]byte
 	go tcpip.StartNewConnection(tcpip.MyIP, recvChanSelf, tcpip.SelfNonceTopic)
 	go sendNonceMsgInLoopSelf(recvChanExit)
-	log.Println("Enter connection receiving loop (nonce msg self)")
+	logger.GetLogger().Println("Enter connection receiving loop (nonce msg self)")
 	for !quit {
 		select {
 		case s := <-recvChanSelf:
@@ -307,5 +307,5 @@ func StartSubscribingNonceMsgSelf() {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	log.Println("Exit connection receiving loop (nonce msg self)")
+	logger.GetLogger().Println("Exit connection receiving loop (nonce msg self)")
 }

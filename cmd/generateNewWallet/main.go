@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/wallet"
 	"golang.org/x/crypto/ssh/terminal"
-	"log"
 	"os"
 	"os/user"
 	"strconv"
@@ -28,22 +28,22 @@ func main() {
 	}
 	walletNumber, err := strconv.Atoi(input)
 	if (err != nil) || (0 > walletNumber) || (walletNumber > 255) {
-		log.Fatalf("wallet number should be integer from 0 to 255. Not ", walletNumber)
+		logger.GetLogger().Fatalf("wallet number should be integer from 0 to 255. Not ", walletNumber)
 	}
 	fmt.Print("Enter password: ")
 
 	password, err := terminal.ReadPassword(0)
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	w, err := wallet.GenerateNewWallet(uint8(walletNumber), string(password))
 	if err != nil {
-		log.Printf("Can not create wallet. Error %v", err)
+		logger.GetLogger().Printf("Can not create wallet. Error %v", err)
 	}
 	folderPath := w.HomePath
 	err = os.MkdirAll(w.HomePath, 0755)
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	fileInfo, err := os.Stat(folderPath)
 	if err != nil {
@@ -64,7 +64,7 @@ func main() {
 	folderPath2 := w.HomePath2
 	err = os.MkdirAll(w.HomePath2, 0755)
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	fileInfo2, err := os.Stat(folderPath2)
 	if err != nil {
@@ -84,7 +84,7 @@ func main() {
 
 	err = w.Store(true)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return
 	}
 }

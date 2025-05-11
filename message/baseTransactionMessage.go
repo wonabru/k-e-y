@@ -3,9 +3,9 @@ package message
 import (
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/tcpip"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
-	"log"
 )
 
 var validTopics = [][2]byte{{'N', 'N'}, {'S', 'S'}, {'T', 'T'}, {'B', 'B'}}
@@ -26,19 +26,19 @@ func (a TransactionsMessage) GetTransactionsFromBytes() (map[[2]byte][]transacti
 			for _, tb := range a.TransactionsBytes[topic] {
 				tx := transactionsDefinition.Transaction{}
 				if len(tb) < 33+76 { // min transaction bytes length
-					log.Printf("warning: %v bytes of transaction", len(tb))
+					logger.GetLogger().Printf("warning: %v bytes of transaction", len(tb))
 					continue
 				}
 				at, rest, err := tx.GetFromBytes(tb)
 				if err != nil || len(rest) > 0 {
-					log.Println("warning: ", err)
+					logger.GetLogger().Println("warning: ", err)
 					continue
 					//return nil, err
 				}
 				if at.Verify() || topic == tcpip.NonceTopic || topic == tcpip.SelfNonceTopic {
 					txn[topic] = append(txn[topic], at)
 				} else {
-					log.Println("warning: transaction fail to verify")
+					logger.GetLogger().Println("warning: transaction fail to verify")
 				}
 			}
 		}
@@ -115,7 +115,7 @@ func (a TransactionsMessage) GetFromBytes(b []byte) (AnyMessage, error) {
 
 			sb, b, err = common.BytesWithLenToBytes(b)
 			if err != nil {
-				log.Println("unmarshal AnyNonceMessage from bytes fails")
+				logger.GetLogger().Println("unmarshal AnyNonceMessage from bytes fails")
 				return nil, err
 			}
 			transactions = append(transactions, sb)

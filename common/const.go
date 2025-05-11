@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/okuralabs/okura-node/crypto/oqs"
+	"github.com/okuralabs/okura-node/logger"
 	"golang.org/x/exp/rand"
-	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -136,7 +136,7 @@ func GetMyRewardPercentage() int16 {
 func init() {
 
 	if !bytes.Equal(MessageInitialization[:], GetByteInt32(MaxMessageSizeBytes)) {
-		log.Fatal("set proper MessageInitialization that fit to MaxMessageSizeBytes. Must be: common.MessageInitialization == GetByteInt32(common.MaxMessageSizeBytes)", GetInt32FromByte(MessageInitialization[:]), GetByteInt32(MaxMessageSizeBytes))
+		logger.GetLogger().Fatal("set proper MessageInitialization that fit to MaxMessageSizeBytes. Must be: common.MessageInitialization == GetByteInt32(common.MaxMessageSizeBytes)", GetInt32FromByte(MessageInitialization[:]), GetByteInt32(MaxMessageSizeBytes))
 	}
 	enc1 := oqs.NewConfigEnc1()
 	fmt.Print(enc1.ToString())
@@ -150,25 +150,25 @@ func init() {
 	ShiftToPastInReset = 1
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	err = godotenv.Load(homePath + "/.okura/.env")
 	if err != nil {
-		log.Fatal("Error loading .env file", err)
+		logger.GetLogger().Fatal("Error loading .env file", err)
 	}
 	da, err := strconv.Atoi(os.Getenv("DELEGATED_ACCOUNT"))
 	if err != nil {
-		log.Fatal("Error getting DELEGATED_ACCOUNT")
+		logger.GetLogger().Fatal("Error getting DELEGATED_ACCOUNT")
 	}
 	delegatedAccount = GetDelegatedAccountAddress(int16(da))
 
 	//DefaultPercentageReward int16 = 500 // 50 %
 	v, err := strconv.Atoi(os.Getenv("REWARD_PERCENTAGE"))
 	if err != nil {
-		log.Fatal("Error getting REWARD_PERCENTAGE")
+		logger.GetLogger().Fatal("Error getting REWARD_PERCENTAGE")
 	}
 	rewardPercentage = int16(v)
 	if rewardPercentage > 500 {
-		log.Fatal("reward for operational account has to be less than 50%")
+		logger.GetLogger().Fatal("reward for operational account has to be less than 50%")
 	}
 }

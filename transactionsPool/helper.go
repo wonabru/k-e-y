@@ -3,8 +3,8 @@ package transactionsPool
 import (
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
-	"log"
 )
 
 func RemoveBadTransactionByHash(hash []byte, height int64) error {
@@ -13,20 +13,20 @@ func RemoveBadTransactionByHash(hash []byte, height int64) error {
 	PoolTxMultiSign.RemoveTransactionByHash(hash)
 	err := transactionsDefinition.RemoveTransactionFromDBbyHash(common.TransactionPoolHashesDBPrefix[:], hash)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	//TODO
 	err = transactionsDefinition.RemoveTransactionFromDBbyHash(common.TransactionDBPrefix[:], hash)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	err = CheckTransactionInDBAndInMarkleTrie(hash)
 	if err == nil {
-		log.Println("transaction is in trie")
+		logger.GetLogger().Println("transaction is in trie")
 	}
 	err = RemoveMerkleTrieFromDB(height)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	PoolsTx.BanTransactionByHash(hash)
 	PoolTxEscrow.BanTransactionByHash(hash)
@@ -48,7 +48,7 @@ func CheckTransactionInDBAndInMarkleTrie(hash []byte) error {
 			return err
 		}
 		if txHeight < 0 {
-			log.Println("transaction not in merkle tree. removing transaction: checkTransactionInDBAndInMarkleTrie")
+			logger.GetLogger().Println("transaction not in merkle tree. removing transaction: checkTransactionInDBAndInMarkleTrie")
 			//TODO
 			//err = transactionsDefinition.RemoveTransactionFromDBbyHash(common.TransactionDBPrefix[:], hash)
 			//if err != nil {

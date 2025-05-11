@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/common"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 )
 
@@ -66,7 +66,7 @@ func SaveVotesEncryption2(value []byte, height int64, delegatedAccount common.Ad
 	}
 	VotesEncryptionMutex.Lock()
 	defer VotesEncryptionMutex.Unlock()
-	log.Println("Delegated Account ", id, " staked: ", account.Int64toFloat64(staked))
+	logger.GetLogger().Println("Delegated Account ", id, " staked: ", account.Int64toFloat64(staked))
 	po, exists := VotesEncryption2[uint8(id)]
 	if !exists || po.Height <= height {
 		VotesEncryption2[uint8(id)] = Votes{
@@ -262,7 +262,7 @@ func VerifyEncryptionForReplacing(height int64, totalStaked int64, primary bool)
 
 	// 2/3 for invalidation
 	if staked <= 2*totalStaked/3 {
-		log.Println("staked:", account.Int64toFloat64(staked), "total staked", account.Int64toFloat64(totalStaked))
+		logger.GetLogger().Println("staked:", account.Int64toFloat64(staked), "total staked", account.Int64toFloat64(totalStaked))
 		return false
 	}
 

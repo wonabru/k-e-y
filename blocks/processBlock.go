@@ -3,12 +3,11 @@ package blocks
 import (
 	"bytes"
 	"fmt"
-	"log"
-
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/crypto/oqs"
 	"github.com/okuralabs/okura-node/database"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/oracles"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
 	"github.com/okuralabs/okura-node/transactionsPool"
@@ -22,7 +21,7 @@ func CheckBaseBlock(newBlock Block, lastBlock Block) (*transactionsPool.MerkleTr
 	}
 
 	if !bytes.Equal(lastBlock.BlockHash.GetBytes(), newBlock.GetHeader().PreviousHash.GetBytes()) {
-		log.Println("lastBlock.BlockHash", lastBlock.BlockHash.GetHex(), newBlock.GetHeader().PreviousHash.GetHex())
+		logger.GetLogger().Println("lastBlock.BlockHash", lastBlock.BlockHash.GetHex(), newBlock.GetHeader().PreviousHash.GetHex())
 		return nil, fmt.Errorf("last block hash not match to one stored in new block")
 	}
 	// needs to check block and process
@@ -74,7 +73,7 @@ func CheckBaseBlock(newBlock Block, lastBlock Block) (*transactionsPool.MerkleTr
 
 		if enc1.SigName == common.SigName() && enc1.IsPaused == common.IsPaused() {
 			//newBlock.BaseBlock.BaseHeader.Encryption1 = []byte{}
-			log.Println("no need to change encryption, so leave encryption 1 empty")
+			logger.GetLogger().Println("no need to change encryption, so leave encryption 1 empty")
 		} else {
 			if !oqs.VerifyEncConfig(enc1) {
 				return nil, fmt.Errorf("encryption 1 verification fails")
@@ -108,7 +107,7 @@ func CheckBaseBlock(newBlock Block, lastBlock Block) (*transactionsPool.MerkleTr
 		}
 		if enc2.SigName == common.SigName2() && enc2.IsPaused == common.IsPaused2() {
 			//newBlock.BaseBlock.BaseHeader.Encryption2 = []byte{}
-			log.Println("no need to change encryption, so leave encryption 2 empty")
+			logger.GetLogger().Println("no need to change encryption, so leave encryption 2 empty")
 		} else {
 			if !oqs.VerifyEncConfig(enc2) {
 				return nil, fmt.Errorf("encryption 2 verification fails")
@@ -202,7 +201,7 @@ func CheckBlockTransfers(block Block, lastBlock Block) (int64, int64, error) {
 			stakingAcc := account.GetStakingAccountByAddressBytes(address.GetBytes(), n%256)
 			if !bytes.Equal(stakingAcc.Address[:], address.GetBytes()) {
 
-				log.Println("no account found in check block transfer: CheckBlockTransfers")
+				logger.GetLogger().Println("no account found in check block transfer: CheckBlockTransfers")
 				copy(stakingAcc.Address[:], address.GetBytes())
 				copy(stakingAcc.DelegatedAccount[:], recipientAddress.GetBytes())
 
@@ -249,7 +248,7 @@ func CheckBlockTransfers(block Block, lastBlock Block) (int64, int64, error) {
 	reward := account.GetReward(lastSupply)
 	lastSupply += reward
 	if lastSupply != block.GetBlockSupply() {
-		log.Println("lastSupply:", lastSupply, "block.GetBlockSupply()", block.GetBlockSupply())
+		logger.GetLogger().Println("lastSupply:", lastSupply, "block.GetBlockSupply()", block.GetBlockSupply())
 		return 0, 0, fmt.Errorf("block supply checking fails: CheckBlockTransfers")
 	}
 
@@ -259,7 +258,7 @@ func CheckBlockTransfers(block Block, lastBlock Block) (int64, int64, error) {
 func ProcessBlockTransfers(block Block, reward int64) error {
 	err := ProcessTransactionsEscrow(block.GetHeader().Height)
 	if err != nil {
-		log.Println("ProcessTransactionsEscrow: ", err)
+		logger.GetLogger().Println("ProcessTransactionsEscrow: ", err)
 	}
 
 	txs := block.TransactionsHashes
@@ -357,7 +356,7 @@ func EvaluateSmartContracts(bl *Block) bool {
 			prefix := common.OutputLogsHashesDBPrefix[:]
 			err := database.MainDB.Put(append(prefix, th[:]...), []byte(logs[th]))
 			if err != nil {
-				log.Println("Cannot store output logs")
+				logger.GetLogger().Println("Cannot store output logs")
 				return false
 			}
 
@@ -366,13 +365,13 @@ func EvaluateSmartContracts(bl *Block) bool {
 			prefix = common.OutputAddressesHashesDBPrefix[:]
 			err = database.MainDB.Put(append(prefix, th[:]...), codes[aa])
 			if err != nil {
-				log.Println("Cannot store address codes")
+				logger.GetLogger().Println("Cannot store address codes")
 				return false
 			}
 		}
 
 	} else {
-		log.Println("Evaluating Smart Contract fails")
+		logger.GetLogger().Println("Evaluating Smart Contract fails")
 		return false
 	}
 	return true
@@ -403,15 +402,15 @@ func CheckBlockAndTransferFunds(newBlock *Block, lastBlock Block, merkleTrie *tr
 	staked, rewarded := GetSupplyInStakedAccounts()
 	//coinsInDex := account.GetCoinLiquidityInDex()
 	if GetSupplyInAccounts()+staked+rewarded+reward+lastBlock.BlockFee != newBlock.GetBlockSupply() {
-		log.Println("GetSupplyInAccounts()", GetSupplyInAccounts())
-		log.Println("staked:", staked)
-		log.Println("rewarded", rewarded)
-		log.Println("lastBlock.BlockFee", lastBlock.BlockFee)
-		log.Println("GetSupplyInAccounts()+staked+rewarded+reward+lastBlock.BlockFee:", GetSupplyInAccounts()+staked+rewarded+reward+lastBlock.BlockFee, "newBlock.GetBlockSupply():", newBlock.GetBlockSupply())
+		logger.GetLogger().Println("GetSupplyInAccounts()", GetSupplyInAccounts())
+		logger.GetLogger().Println("staked:", staked)
+		logger.GetLogger().Println("rewarded", rewarded)
+		logger.GetLogger().Println("lastBlock.BlockFee", lastBlock.BlockFee)
+		logger.GetLogger().Println("GetSupplyInAccounts()+staked+rewarded+reward+lastBlock.BlockFee:", GetSupplyInAccounts()+staked+rewarded+reward+lastBlock.BlockFee, "newBlock.GetBlockSupply():", newBlock.GetBlockSupply())
 		return fmt.Errorf("block supply checking fails vs account balances: CheckBlockAndTransferFunds")
 	}
 	hashes := newBlock.GetBlockTransactionsHashes()
-	log.Println("Number of transactions in block: ", len(hashes))
+	logger.GetLogger().Println("Number of transactions in block: ", len(hashes))
 	err = ProcessBlockPubKey(*newBlock)
 	if err != nil {
 		return err
@@ -433,7 +432,7 @@ func CheckBlockAndTransferFunds(newBlock *Block, lastBlock Block, merkleTrie *tr
 	for _, h := range hashes {
 		tx, err := transactionsDefinition.LoadFromDBPoolTx(common.TransactionPoolHashesDBPrefix[:], h.GetBytes())
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			continue
 		}
 		err = tx.StoreToDBPoolTx(common.TransactionDBPrefix[:])
@@ -443,12 +442,12 @@ func CheckBlockAndTransferFunds(newBlock *Block, lastBlock Block, merkleTrie *tr
 		transactionsPool.PoolsTx.RemoveTransactionByHash(h.GetBytes())
 		err = tx.RemoveFromDBPoolTx(common.TransactionPoolHashesDBPrefix[:])
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 	err = ProcessBlockEncryption(*newBlock, lastBlock)
 	if err != nil {
-		log.Println("process block encryption fails", err)
+		logger.GetLogger().Println("process block encryption fails", err)
 	}
 	return nil
 }

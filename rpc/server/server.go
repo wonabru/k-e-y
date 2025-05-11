@@ -10,6 +10,7 @@ import (
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/core/stateDB"
 	"github.com/okuralabs/okura-node/crypto/oqs"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/pubkeys"
 	nonceServices "github.com/okuralabs/okura-node/services/nonceService"
 	"github.com/okuralabs/okura-node/services/transactionServices"
@@ -18,7 +19,6 @@ import (
 	"github.com/okuralabs/okura-node/transactionsDefinition"
 	"github.com/okuralabs/okura-node/transactionsPool"
 	"github.com/okuralabs/okura-node/wallet"
-	"log"
 	"net"
 	"net/rpc"
 	"strconv"
@@ -34,14 +34,14 @@ func ListenRPC() {
 	var address = "0.0.0.0:" + strconv.Itoa(tcpip.Ports[tcpip.RPCTopic])
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("Error resolving TCP address: %v", err)
+		logger.GetLogger().Fatalf("Error resolving TCP address: %v", err)
 	}
 	defer listener.Close()
 	err = rpc.Register(new(Listener))
 	if err != nil {
-		log.Fatalf("Error registering RPC listener: %v", err)
+		logger.GetLogger().Fatalf("Error registering RPC listener: %v", err)
 	}
-	log.Printf("RPC server listening on %s", address)
+	logger.GetLogger().Printf("RPC server listening on %s", address)
 	rpc.Accept(listener)
 }
 
@@ -137,18 +137,18 @@ func (l *Listener) Send(lineBeg []byte, reply *[]byte) error {
 }
 
 func handleWALL(line []byte, reply *[]byte) {
-	log.Println(string(line))
+	logger.GetLogger().Println(string(line))
 	w := wallet.GetActiveWallet()
 	r, err := json.Marshal(w)
 	if err != nil {
-		log.Println("Cannot marshal stat's struct")
+		logger.GetLogger().Println("Cannot marshal stat's struct")
 		return
 	}
 	*reply = r
 }
 
 func handleCHECK(line []byte, reply *[]byte) {
-	log.Println(string(line))
+	logger.GetLogger().Println(string(line))
 	w := wallet.GetActiveWallet()
 	*reply = nil
 	_, err := pubkeys.LoadPubKey(w.Address.GetBytes())
@@ -163,7 +163,7 @@ func handleCHECK(line []byte, reply *[]byte) {
 }
 
 func handleESCR(line []byte, reply *[]byte) {
-	log.Println(string(line))
+	logger.GetLogger().Println(string(line))
 	*reply = nil
 	//primary := line[0] == 0
 	//delay := common.GetInt64FromByte(line[1:9])
@@ -171,12 +171,12 @@ func handleESCR(line []byte, reply *[]byte) {
 }
 
 func handleMULT(line []byte, reply *[]byte) {
-	log.Println(string(line))
+	logger.GetLogger().Println(string(line))
 	*reply = nil
 }
 
 func handleENCR(line []byte, reply *[]byte) {
-	log.Println(string(line))
+	logger.GetLogger().Println(string(line))
 	*reply = nil
 
 	enb1, err := oqs.GenerateBytesFromParams(common.SigName(), common.PubKeyLength(), common.PrivateKeyLength(), common.SignatureLength(), common.IsPaused())
@@ -339,7 +339,7 @@ func handleDETS(line []byte, reply *[]byte) {
 	case common.HashLength:
 		tx, err := transactionsDefinition.LoadFromDBPoolTx(common.TransactionDBPrefix[:], line)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			*reply = []byte("TX")
 			return
 		}
@@ -350,7 +350,7 @@ func handleDETS(line []byte, reply *[]byte) {
 		height := common.GetInt64FromByte(line)
 		block, err := blocks.LoadBlock(height)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			*reply = []byte("BL")
 			return
 		}
@@ -450,7 +450,7 @@ func handleSTAT(byt []byte, reply *[]byte) {
 	sm := statistics.GetStatsManager()
 	msb, err := common.Marshal(sm.Stats, common.StatDBPrefix)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return
 	}
 	*reply = msb

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
 	"github.com/okuralabs/okura-node/transactionsPool"
-	"log"
 )
 
 var ZerosHash = make([]byte, common.HashLength)
@@ -18,15 +18,15 @@ func CheckStakingTransaction(tx transactionsDefinition.Transaction, sumAmount in
 	address := tx.GetSenderAddress()
 	acc := account.GetAccountByAddressBytes(address.GetBytes())
 	if !bytes.Equal(acc.Address[:], address.GetBytes()) {
-		log.Println("no account found in check staking transaction: CheckStakingTransaction")
+		logger.GetLogger().Println("no account found in check staking transaction: CheckStakingTransaction")
 		return false
 	}
 	if acc.Balance < fee {
-		log.Println("not enough funds on account to cover fee: CheckStakingTransaction")
+		logger.GetLogger().Println("not enough funds on account to cover fee: CheckStakingTransaction")
 		return false
 	}
 	if acc.Balance < sumFee {
-		log.Println("not enough funds on account to cover sumFee: CheckStakingTransaction")
+		logger.GetLogger().Println("not enough funds on account to cover sumFee: CheckStakingTransaction")
 		return false
 	}
 	addressRecipient := tx.TxData.Recipient
@@ -45,28 +45,28 @@ func CheckStakingTransaction(tx transactionsDefinition.Transaction, sumAmount in
 		if tx.GetLockedAmount() > 0 {
 
 			if amount <= 0 {
-				log.Println("when locking no withdrawals allows: CheckStakingTransaction")
+				logger.GetLogger().Println("when locking no withdrawals allows: CheckStakingTransaction")
 				return false
 			}
 
 			if amount < common.MinStakingUser && amount > 0 {
-				log.Println("staking amount has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
+				logger.GetLogger().Println("staking amount has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
 				return false
 			}
 			if tx.GetLockedAmount() < 0 {
-				log.Println("locked amount has to be larger or equal than ", 0, ": CheckStakingTransaction")
+				logger.GetLogger().Println("locked amount has to be larger or equal than ", 0, ": CheckStakingTransaction")
 				return false
 			}
 			if tx.GetLockedAmount() > amount {
-				log.Println("locked amount has to be less or equal than ", amount, ": CheckStakingTransaction")
+				logger.GetLogger().Println("locked amount has to be less or equal than ", amount, ": CheckStakingTransaction")
 				return false
 			}
 			if tx.GetReleasePerBlock() < 0 {
-				log.Println("release per block has to be larger or equal than ", 0, ": CheckStakingTransaction")
+				logger.GetLogger().Println("release per block has to be larger or equal than ", 0, ": CheckStakingTransaction")
 				return false
 			}
 			if tx.GetReleasePerBlock() > tx.GetLockedAmount() {
-				log.Println("release per block has to be less or equal than ", tx.GetLockedAmount(), ": CheckStakingTransaction")
+				logger.GetLogger().Println("release per block has to be less or equal than ", tx.GetLockedAmount(), ": CheckStakingTransaction")
 				return false
 			}
 
@@ -74,28 +74,28 @@ func CheckStakingTransaction(tx transactionsDefinition.Transaction, sumAmount in
 			accStaking := account.GetStakingAccountByAddressBytes(address.GetBytes(), n)
 			if !bytes.Equal(accStaking.DelegatedAccount[:], addressRecipient.GetBytes()) {
 				if amount <= 0 {
-					log.Println(n, address.GetHex(), common.Bytes2Hex(accStaking.DelegatedAccount[:]), " != ", common.Bytes2Hex(addressRecipient.GetBytes()))
-					log.Println("no staking account found in check staking transaction", ": CheckStakingTransaction")
+					logger.GetLogger().Println(n, address.GetHex(), common.Bytes2Hex(accStaking.DelegatedAccount[:]), " != ", common.Bytes2Hex(addressRecipient.GetBytes()))
+					logger.GetLogger().Println("no staking account found in check staking transaction", ": CheckStakingTransaction")
 					return false
 				}
 
 			}
 			if amount < common.MinStakingUser && amount > 0 {
-				log.Println("staking amount has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
+				logger.GetLogger().Println("staking amount has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
 				return false
 			}
 			if accStaking.StakedBalance+amount < common.MinStakingUser && accStaking.StakedBalance+amount != 0 {
-				log.Println("not enough staked balance. Staking has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
+				logger.GetLogger().Println("not enough staked balance. Staking has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
 				return false
 			}
 			// check for all transactions together
 
 			if sumAmount < common.MinStakingUser && sumAmount > 0 {
-				log.Println("staking amount has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
+				logger.GetLogger().Println("staking amount has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
 				return false
 			}
 			if accStaking.StakedBalance+sumAmount < common.MinStakingUser && accStaking.StakedBalance+sumAmount != 0 {
-				log.Println("not enough staked balance. Staking has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
+				logger.GetLogger().Println("not enough staked balance. Staking has to be larger than ", common.MinStakingUser, ": CheckStakingTransaction")
 				return false
 			}
 		}
@@ -104,11 +104,11 @@ func CheckStakingTransaction(tx transactionsDefinition.Transaction, sumAmount in
 
 		accStaking := account.GetStakingAccountByAddressBytes(address.GetBytes(), n%256)
 		if !bytes.Equal(accStaking.Address[:], address.GetBytes()) {
-			log.Println("no staking account found in check staking transaction (rewards)", ": CheckStakingTransaction")
+			logger.GetLogger().Println("no staking account found in check staking transaction (rewards)", ": CheckStakingTransaction")
 			return false
 		}
 		if accStaking.StakingRewards+amount < 0 {
-			log.Println("not enough rewards balance. Rewards has to be larger than ", 0, ": CheckStakingTransaction")
+			logger.GetLogger().Println("not enough rewards balance. Rewards has to be larger than ", 0, ": CheckStakingTransaction")
 			return false
 		}
 	}
@@ -210,7 +210,7 @@ func ProcessTransaction(tx transactionsDefinition.Transaction, height int64) err
 				return fmt.Errorf("no staking account found in check staking transaction (rewards): ProcessTransaction")
 			}
 			if amount > 0 {
-				log.Println("not implemented: ProcessTransaction")
+				logger.GetLogger().Println("not implemented: ProcessTransaction")
 				//err := account.Reward(accStaking.Address[:], amount, height, n%256)
 				//if err != nil {
 				//	return err
@@ -301,7 +301,7 @@ func ProcessTransactionsMultiSign(tx transactionsDefinition.Transaction, height 
 	acc := account.GetAccountByAddressBytes(mainTx.TxParam.Sender.GetBytes())
 
 	if len(txs) < int(acc.MultiSignNumber) {
-		log.Println("not enough signatures for transactions to process ", tx.TxParam.MultiSignTx.GetHex())
+		logger.GetLogger().Println("not enough signatures for transactions to process ", tx.TxParam.MultiSignTx.GetHex())
 		return nil
 	}
 	numApprovals := 0
@@ -323,7 +323,7 @@ func ProcessTransactionsMultiSign(tx transactionsDefinition.Transaction, height 
 		}
 	}
 	if numApprovals < int(acc.MultiSignNumber) {
-		log.Println("not enough signatures for transactions to process ", tx.TxParam.MultiSignTx.GetHex())
+		logger.GetLogger().Println("not enough signatures for transactions to process ", tx.TxParam.MultiSignTx.GetHex())
 		return nil
 	}
 

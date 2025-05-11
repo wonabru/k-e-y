@@ -3,7 +3,7 @@ package message
 import (
 	"bytes"
 	"github.com/okuralabs/okura-node/common"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 )
 
 // tx - transaction, gt - get transaction, st - sync transaction, "nn" - nonce, "bl" - block, "rb" - reject block, "hi" - GetHeight, "gh" - GetHeaders, "sh" - SendHeaders
@@ -30,17 +30,17 @@ func (m BaseMessage) GetBytes() []byte {
 
 func (m *BaseMessage) GetFromBytes(b []byte) {
 	if len(b) != 4 {
-		log.Println("bytes length should be 4")
+		logger.GetLogger().Println("bytes length should be 4")
 		return
 	}
 	m.Head = b[:2]
 	if !common.ContainsKey(validHead, string(m.Head)) {
-		log.Println("Head not in valid heads keys")
+		logger.GetLogger().Println("Head not in valid heads keys")
 		return
 	}
 	m.ChainID = common.GetInt16FromByte(b[2:4])
 	if m.ChainID != common.GetChainID() {
-		log.Println("Wrong Chain ID")
+		logger.GetLogger().Println("Wrong Chain ID")
 		return
 	}
 }
@@ -62,13 +62,13 @@ func CheckValidMessage(m []byte) (bool, AnyMessage) {
 	msg := TransactionsMessage{}
 	amsg, err := msg.GetFromBytes(m)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return false, msg
 	}
 
 	isValid := CheckMessage(amsg)
 	if isValid == false {
-		log.Println("message is invalid")
+		logger.GetLogger().Println("message is invalid")
 		return false, msg
 	}
 	return true, amsg

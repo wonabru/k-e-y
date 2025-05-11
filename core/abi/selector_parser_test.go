@@ -18,7 +18,6 @@ package abi
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"testing"
 )
@@ -35,7 +34,7 @@ func TestParseSelector(t *testing.T) {
 			} else if components, ok := typeOrComponents.([][]ArgumentMarshaling); ok {
 				result = append(result, ArgumentMarshaling{name, "tuple[]", "tuple[]", components[0], false})
 			} else {
-				log.Fatalf("unexpected type %T", typeOrComponents)
+				logger.GetLogger().Fatalf("unexpected type %T", typeOrComponents)
 			}
 		}
 		return result

@@ -2,7 +2,7 @@ package statistics
 
 import (
 	"encoding/json"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 
 	"github.com/okuralabs/okura-node/blocks"
@@ -40,7 +40,7 @@ var statsManager *StatsManager
 // InitStatsManager initializes the statistics manager
 func InitStatsManager() {
 	if database.MainDB == nil {
-		log.Fatal("MainDB is not initialized")
+		logger.GetLogger().Fatal("MainDB is not initialized")
 	}
 	statsManager = &StatsManager{
 		Stats: &Stats{
@@ -113,6 +113,6 @@ func (sm *StatsManager) UpdateStatistics(newBlock blocks.Block, lastBlock blocks
 	sm.Stats.TransactionsPendingSize = nt * len(empt.GetBytes())
 	sm.Mu.Unlock()
 	if err := sm.Save(); err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 }

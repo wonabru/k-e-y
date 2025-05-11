@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/crypto/blake2b"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"time"
 )
 
@@ -79,7 +79,7 @@ func GetSignatureFromBytes(b []byte, address Address) (Signature, error) {
 	var err error
 	err = s.Init(b, address)
 	if err != nil {
-		log.Println("Get Hash from bytes failed")
+		logger.GetLogger().Println("Get Hash from bytes failed")
 		return Signature{}, err
 	}
 	return s, nil
@@ -89,12 +89,12 @@ func GetSignatureFromString(s string, address Address) (Signature, error) {
 	sig := Signature{}
 	sigBytes, err := hex.DecodeString(s)
 	if err != nil {
-		log.Println("decoding string fails")
+		logger.GetLogger().Println("decoding string fails")
 		return Signature{}, err
 	}
 	err = sig.Init(sigBytes, address)
 	if err != nil {
-		log.Println("Get Hash from bytes failed")
+		logger.GetLogger().Println("Get Hash from bytes failed")
 		return Signature{}, err
 	}
 	return sig, nil

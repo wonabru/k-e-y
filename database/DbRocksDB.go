@@ -3,7 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"os"
 	"path/filepath"
 	"sync"
@@ -45,7 +45,7 @@ func (db *BlockchainDB) InitPermanent(dbPath string) (*BlockchainDB, error) {
 		if _, err := os.Stat(lockFile); err == nil {
 			// Try to remove the lock file
 			if err := os.Remove(lockFile); err != nil {
-				log.Printf("Warning: Could not remove stale lock file: %v", err)
+				logger.GetLogger().Printf("Warning: Could not remove stale lock file: %v", err)
 			}
 		}
 	} else if !os.IsNotExist(err) {
@@ -83,7 +83,7 @@ func (db *BlockchainDB) InitInMemory() (*BlockchainDB, error) {
 	opts.SetEnv(gorocksdb.NewMemEnv())
 	db.db, err = gorocksdb.OpenDb(opts, "okura_node")
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	return db, nil
 }
@@ -96,7 +96,7 @@ func (db *BlockchainDB) GetNode(hash commoneth.Hash) ([]byte, error) {
 }
 
 func (d *BlockchainDB) Close() {
-	log.Println("Starting database closure...")
+	logger.GetLogger().Println("Starting database closure...")
 
 	// Create a channel to signal completion
 	done := make(chan struct{})
@@ -112,34 +112,34 @@ func (d *BlockchainDB) Close() {
 
 		select {
 		case <-lockAcquired:
-			log.Println("Acquired database mutex lock")
+			logger.GetLogger().Println("Acquired database mutex lock")
 			defer d.mutex.Unlock()
 
 			if d.db == nil {
-				log.Println("Database already closed")
+				logger.GetLogger().Println("Database already closed")
 				done <- struct{}{}
 				return
 			}
 
-			log.Println("Flushing pending writes...")
+			logger.GetLogger().Println("Flushing pending writes...")
 			fo := gorocksdb.NewDefaultFlushOptions()
 			defer fo.Destroy()
 			if err := d.db.Flush(fo); err != nil {
-				log.Printf("Error flushing database: %v", err)
+				logger.GetLogger().Printf("Error flushing database: %v", err)
 			} else {
-				log.Println("Successfully flushed pending writes")
+				logger.GetLogger().Println("Successfully flushed pending writes")
 			}
 
-			log.Println("Closing database...")
+			logger.GetLogger().Println("Closing database...")
 			d.db.Close()
-			log.Println("Successfully closed database")
+			logger.GetLogger().Println("Successfully closed database")
 
 			d.db = nil
-			log.Println("Database closure completed successfully")
+			logger.GetLogger().Println("Database closure completed successfully")
 			done <- struct{}{}
 
 		case <-time.After(1 * time.Second):
-			log.Println("Failed to acquire mutex lock, forcing cleanup")
+			logger.GetLogger().Println("Failed to acquire mutex lock, forcing cleanup")
 			// Force cleanup without mutex
 			if d.db != nil {
 				d.db.Close()
@@ -152,9 +152,9 @@ func (d *BlockchainDB) Close() {
 	// Wait for completion with timeout
 	select {
 	case <-done:
-		log.Println("Database closed normally")
+		logger.GetLogger().Println("Database closed normally")
 	case <-time.After(2 * time.Second):
-		log.Println("Database closure timed out, forcing cleanup")
+		logger.GetLogger().Println("Database closure timed out, forcing cleanup")
 		// Last resort cleanup
 		if d.db != nil {
 			d.db.Close()

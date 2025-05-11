@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"net"
 	"syscall"
 	"time"
@@ -34,7 +34,7 @@ func StartNewListener(sendChan <-chan []byte, topic [2]byte) {
 		default:
 			_, err := Accept(topic, conn)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 				continue
 			}
 		}
@@ -48,7 +48,7 @@ func StartNewListener(sendChan <-chan []byte, topic [2]byte) {
 //		if len(s) > 4 {
 //			copy(ipr[:], s[:4])
 //		} else {
-//			log.Println("wrong message")
+//			logger.GetLogger().Println("wrong message")
 //			continue
 //		}
 //		PeersMutex.RLock()
@@ -101,7 +101,7 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 			if len(s) > 4 {
 				copy(ipr[:], s[:4])
 			} else {
-				log.Println("wrong message")
+				logger.GetLogger().Println("wrong message")
 				continue
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -111,7 +111,7 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 			case <-ctx.Done():
 				// Handle timeout
 				PeersMutex.Unlock()
-				log.Println("timeout in sending")
+				logger.GetLogger().Println("timeout in sending")
 				cancel()
 				continue
 			default:
@@ -124,13 +124,13 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 						//	ReduceTrustRegisterPeer(k)
 						//}
 						if _, ok := validPeersConnected[k]; !ok {
-							log.Println("when send to all, ignore connection", k)
+							logger.GetLogger().Println("when send to all, ignore connection", k)
 							//CloseAndRemoveConnection(tcpConn0)
 						} else if !bytes.Equal(k[:], MyIP[:]) {
-							//log.Println("send to ipr", k)
+							//logger.GetLogger().Println("send to ipr", k)
 							err := Send(tcpConn0, s[4:])
 							if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
-								log.Println("error in sending to all ", err)
+								logger.GetLogger().Println("error in sending to all ", err)
 								CloseAndRemoveConnection(tcpConn0)
 							}
 						}
@@ -143,13 +143,13 @@ func LoopSend(sendChan <-chan []byte, topic [2]byte) {
 					//	ReduceTrustRegisterPeer(ipr)
 					//}
 					if _, ok2 := validPeersConnected[ipr]; !ok2 {
-						log.Println("ignore when send to ", ipr)
+						logger.GetLogger().Println("ignore when send to ", ipr)
 						//CloseAndRemoveConnection(tcpConn)
 					} else if ok {
-						//log.Println("send to ip", ipr)
+						//logger.GetLogger().Println("send to ip", ipr)
 						err := Send(tcpConn, s[4:])
 						if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) {
-							log.Println("error in sending to ", ipr, err)
+							logger.GetLogger().Println("error in sending to ", ipr, err)
 							CloseAndRemoveConnection(tcpConn)
 						}
 					} else {
@@ -178,11 +178,11 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		ipport = fmt.Sprintf(":%d", Ports[topic])
 	}
 
-	log.Printf("Attempting to connect to %s for topic %v", ipport, topic)
+	logger.GetLogger().Printf("Attempting to connect to %s for topic %v", ipport, topic)
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", ipport)
 	if err != nil {
-		log.Printf("Failed to resolve TCP address for %s: %v", ipport, err)
+		logger.GetLogger().Printf("Failed to resolve TCP address for %s: %v", ipport, err)
 		return
 	}
 
@@ -193,7 +193,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		if err == nil {
 			break
 		}
-		log.Printf("Connection attempt %d to %s failed: %v", i+1, ipport, err)
+		logger.GetLogger().Printf("Connection attempt %d to %s failed: %v", i+1, ipport, err)
 
 		time.Sleep(time.Second * 2)
 		PeersMutex.Lock()
@@ -209,12 +209,12 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 	}
 
 	if err != nil {
-		log.Printf("Failed to establish connection to %s after %d attempts: %v", ipport, maxRetries, err)
+		logger.GetLogger().Printf("Failed to establish connection to %s after %d attempts: %v", ipport, maxRetries, err)
 		return
 	}
 
 	if topic == TransactionTopic {
-		log.Printf("Successfully connected for TRANSACTIONS TOPIC with %v", ip)
+		logger.GetLogger().Printf("Successfully connected for TRANSACTIONS TOPIC with %v", ip)
 	}
 
 	reconnectionTries := 0
@@ -222,7 +222,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Recovered from panic in connection to %v: %v", ip, r)
+			logger.GetLogger().Printf("Recovered from panic in connection to %v: %v", ip, r)
 			receiveChan <- []byte("EXIT")
 			PeersMutex.Lock()
 			defer PeersMutex.Unlock()
@@ -230,7 +230,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		}
 	}()
 
-	log.Printf("Starting message processing loop for connection to %v", ip)
+	logger.GetLogger().Printf("Starting message processing loop for connection to %v", ip)
 
 	rTopic := map[[2]byte][]byte{}
 
@@ -242,7 +242,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 
 		select {
 		case <-Quit:
-			log.Printf("Received quit signal for connection to %v", ip)
+			logger.GetLogger().Printf("Received quit signal for connection to %v", ip)
 			receiveChan <- []byte("EXIT")
 			PeersMutex.Lock()
 			defer PeersMutex.Unlock()
@@ -255,11 +255,11 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 			if bytes.Equal(r, []byte("<-ERR->")) {
 				if reconnectionTries > common.ConnectionMaxTries {
-					log.Println("error in read. Closing connection", ip, string(r))
+					logger.GetLogger().Println("error in read. Closing connection", ip, string(r))
 					tcpConn.Close()
 					tcpConn, err = net.DialTCP("tcp", nil, tcpAddr)
 					if err != nil {
-						log.Printf("Connection attempt %d to %s failed: %v", ipport, err.Error())
+						logger.GetLogger().Printf("Connection attempt %d to %s failed: %v", ipport, err.Error())
 					}
 					reconnectionTries = 0
 					continue
@@ -270,7 +270,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 			if bytes.Equal(r, []byte("<-CLS->")) || bytes.Equal(r, []byte("QUITFOR")) {
 
-				log.Println("Closing connection", ip, r)
+				logger.GetLogger().Println("Closing connection", ip, r)
 				receiveChan <- []byte("EXIT")
 				PeersMutex.Lock()
 				defer PeersMutex.Unlock()
@@ -293,7 +293,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 			}
 
 			if int32(len(r)) > common.MaxMessageSizeBytes {
-				log.Println("error: too long message received: ", len(r))
+				logger.GetLogger().Println("error: too long message received: ", len(r))
 				PeersMutex.Lock()
 				ReduceTrustRegisterPeer(ip)
 				PeersMutex.Unlock()
@@ -310,7 +310,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 					if bytes.Equal(r[:4], common.MessageInitialization[:]) {
 						receiveChan <- append(ip[:], r[4:]...)
 					} else {
-						log.Println("wrong MessageInitialization", r[:4], "should be", common.MessageInitialization[:])
+						logger.GetLogger().Println("wrong MessageInitialization", r[:4], "should be", common.MessageInitialization[:])
 						PeersMutex.Lock()
 						ReduceTrustRegisterPeer(ip)
 						PeersMutex.Unlock()

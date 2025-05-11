@@ -7,13 +7,13 @@ import (
 	"github.com/okuralabs/okura-node/blocks"
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/crypto/oqs"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/message"
 	"github.com/okuralabs/okura-node/oracles"
 	"github.com/okuralabs/okura-node/tcpip"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
 	"github.com/okuralabs/okura-node/transactionsPool"
 	"github.com/okuralabs/okura-node/wallet"
-	"log"
 	"sync"
 )
 
@@ -109,11 +109,11 @@ func CreateBlockFromNonceMessage(nonceTx []transactionsDefinition.Transaction,
 	totalStaked := account.GetStakedInAllDelegatedAccounts()
 	priceOracle, priceOracleData, err := oracles.CalculatePriceOracle(heightTransaction, totalStaked)
 	if err != nil {
-		log.Println("could not establish price oracle", err)
+		logger.GetLogger().Println("could not establish price oracle", err)
 	}
 	randOracle, randOracleData, err := oracles.CalculateRandOracle(heightTransaction, totalStaked)
 	if err != nil {
-		log.Println("could not establish rand oracle", err)
+		logger.GetLogger().Println("could not establish rand oracle", err)
 	}
 	bb := blocks.BaseBlock{
 		BaseHeader:       bh,

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"os"
 	"path/filepath"
 	"sync"
@@ -17,7 +17,7 @@ func init() {
 	// Get home directory
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("failed to get home directory:", err)
+		logger.GetLogger().Fatal("failed to get home directory:", err)
 	}
 
 	// ONLY FOR TESTING
@@ -28,7 +28,7 @@ func init() {
 	blockchainPath := filepath.Join(homePath, common.DefaultBlockchainHomePath)
 	pdb, err := db.InitPermanent(blockchainPath)
 	if err != nil {
-		log.Fatal("failed to initialize blockchain database:", err)
+		logger.GetLogger().Fatal("failed to initialize blockchain database:", err)
 	}
 	MainDB = pdb
 }
@@ -83,7 +83,7 @@ func NewPermanentDB(dbPath string) *BlockchainDB {
 	// Create a permanent database at the specified path
 	permanent, err := db.InitPermanent(dbPath)
 	if err != nil {
-		log.Printf("Failed to initialize permanent database at %s: %v", dbPath, err)
+		logger.GetLogger().Printf("Failed to initialize permanent database at %s: %v", dbPath, err)
 		return nil
 	}
 	return &BlockchainDB{

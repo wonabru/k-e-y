@@ -2,7 +2,7 @@ package syncServices
 
 import (
 	"bytes"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"runtime/debug"
 
 	"github.com/okuralabs/okura-node/account"
@@ -23,20 +23,20 @@ func OnMessage(addr [4]byte, m []byte) {
 
 	h := common.GetHeight()
 
-	//log.Println("New message nonce from:", addr)
+	//logger.GetLogger().Println("New message nonce from:", addr)
 	//common.BlockMutex.Lock()
 	//defer common.BlockMutex.Unlock()
 	defer func() {
 		if r := recover(); r != nil {
 			debug.PrintStack()
-			log.Println("recover (sync Msg)", r)
+			logger.GetLogger().Println("recover (sync Msg)", r)
 		}
 
 	}()
 
 	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
-		log.Println("sync msg validation fails")
+		logger.GetLogger().Println("sync msg validation fails")
 		tcpip.ReduceAndCheckIfBanIP(addr)
 		return
 	}
@@ -127,11 +127,11 @@ func OnMessage(addr [4]byte, m []byte) {
 		}
 		hmax := common.GetHeightMax()
 		if indices[len(indices)-1] <= h {
-			log.Println("shorter other chain")
+			logger.GetLogger().Println("shorter other chain")
 			return
 		}
 		if indices[0] > h {
-			log.Println("too far blocks of other")
+			logger.GetLogger().Println("too far blocks of other")
 			return
 		}
 		// check blocks
@@ -140,14 +140,14 @@ func OnMessage(addr [4]byte, m []byte) {
 		hashesMissingAll := [][]byte{}
 		lastGoodBlock := indices[0]
 		merkleTries := map[int64]*transactionsPool.MerkleTree{}
-		log.Printf("Starting block verification for %d blocks", len(blcks))
+		logger.GetLogger().Printf("Starting block verification for %d blocks", len(blcks))
 		for i := 0; i < len(blcks); i++ {
 			header := blcks[i].GetHeader()
 			index := indices[i]
-			log.Printf("Processing block %d/%d - Height: %d, Index: %d", i+1, len(blcks), header.Height, index)
+			logger.GetLogger().Printf("Processing block %d/%d - Height: %d, Index: %d", i+1, len(blcks), header.Height, index)
 
 			if index <= 0 {
-				log.Printf("Skipping block with invalid index: %d", index)
+				logger.GetLogger().Printf("Skipping block with invalid index: %d", index)
 				continue
 			}
 			block := blcks[i]
@@ -155,7 +155,7 @@ func OnMessage(addr [4]byte, m []byte) {
 			if index <= h {
 				hashOfMyBlockBytes, err := blocks.LoadHashOfBlock(index)
 				if err != nil {
-					log.Printf("ERROR: Failed to load block hash for index %d: %v", index, err)
+					logger.GetLogger().Printf("ERROR: Failed to load block hash for index %d: %v", index, err)
 					defer services.AdjustShiftInPastInReset(hmax)
 					common.ShiftToPastMutex.RLock()
 					defer common.ShiftToPastMutex.RUnlock()
@@ -163,11 +163,11 @@ func OnMessage(addr [4]byte, m []byte) {
 					panic("cannot load block hash")
 				}
 				if bytes.Equal(block.BlockHash.GetBytes(), hashOfMyBlockBytes) {
-					log.Printf("Block %d matches existing block, marking as lastGoodBlock", index)
+					logger.GetLogger().Printf("Block %d matches existing block, marking as lastGoodBlock", index)
 					lastGoodBlock = index
 					continue
 				}
-				log.Printf("Block hash mismatch at index %d - potential fork detected", index)
+				logger.GetLogger().Printf("Block hash mismatch at index %d - potential fork detected", index)
 				defer services.AdjustShiftInPastInReset(hmax)
 				common.ShiftToPastMutex.RLock()
 				defer common.ShiftToPastMutex.RUnlock()
@@ -176,27 +176,27 @@ func OnMessage(addr [4]byte, m []byte) {
 			}
 			if was {
 				oldBlock = blcks[i-1]
-				log.Printf("Using previous block from received blocks for index %d", index)
+				logger.GetLogger().Printf("Using previous block from received blocks for index %d", index)
 			} else {
 				oldBlock, err = blocks.LoadBlock(index - 1)
 				if err != nil {
-					log.Printf("ERROR: Failed to load previous block for index %d: %v", index-1, err)
+					logger.GetLogger().Printf("ERROR: Failed to load previous block for index %d: %v", index-1, err)
 					panic("cannot load block")
 				}
 				was = true
-				log.Printf("Loaded previous block from storage for index %d", index)
+				logger.GetLogger().Printf("Loaded previous block from storage for index %d", index)
 			}
 
 			// Special logging for second block
 			if index == 1 {
-				log.Printf("=== Processing second block in sync service ===")
-				log.Printf("Current height: %d", h)
-				log.Printf("Second block hash: %x", block.BlockHash.GetBytes())
-				log.Printf("Second block previous hash: %x", block.GetHeader().PreviousHash.GetBytes())
-				log.Printf("Genesis block hash: %x", oldBlock.BlockHash.GetBytes())
-				log.Printf("Is initial sync: %v", h == 0)
-				log.Printf("Block verification path: %s", "sync")
-				log.Printf("Block source: %s", func() string {
+				logger.GetLogger().Printf("=== Processing second block in sync service ===")
+				logger.GetLogger().Printf("Current height: %d", h)
+				logger.GetLogger().Printf("Second block hash: %x", block.BlockHash.GetBytes())
+				logger.GetLogger().Printf("Second block previous hash: %x", block.GetHeader().PreviousHash.GetBytes())
+				logger.GetLogger().Printf("Genesis block hash: %x", oldBlock.BlockHash.GetBytes())
+				logger.GetLogger().Printf("Is initial sync: %v", h == 0)
+				logger.GetLogger().Printf("Block verification path: %s", "sync")
+				logger.GetLogger().Printf("Block source: %s", func() string {
 					if was {
 						return "from received blocks"
 					}
@@ -206,32 +206,32 @@ func OnMessage(addr [4]byte, m []byte) {
 				// Check if block exists in storage
 				storedBlock, err := blocks.LoadBlock(1)
 				if err == nil {
-					log.Printf("Second block already in storage - Hash: %x", storedBlock.BlockHash.GetBytes())
-					log.Printf("Second block in storage previous hash: %x", storedBlock.GetHeader().PreviousHash.GetBytes())
+					logger.GetLogger().Printf("Second block already in storage - Hash: %x", storedBlock.BlockHash.GetBytes())
+					logger.GetLogger().Printf("Second block in storage previous hash: %x", storedBlock.GetHeader().PreviousHash.GetBytes())
 					if !bytes.Equal(storedBlock.BlockHash.GetBytes(), block.BlockHash.GetBytes()) {
-						log.Printf("WARNING: Second block hash mismatch between received and stored")
-						log.Printf("Stored hash: %x", storedBlock.BlockHash.GetBytes())
-						log.Printf("Received hash: %x", block.BlockHash.GetBytes())
+						logger.GetLogger().Printf("WARNING: Second block hash mismatch between received and stored")
+						logger.GetLogger().Printf("Stored hash: %x", storedBlock.BlockHash.GetBytes())
+						logger.GetLogger().Printf("Received hash: %x", block.BlockHash.GetBytes())
 					}
 				} else {
-					log.Printf("No second block found in storage")
+					logger.GetLogger().Printf("No second block found in storage")
 				}
 			}
 
 			// Add detailed logging for block hash verification
-			log.Printf("block %d hash: %x", index, block.BlockHash.GetBytes())
-			log.Printf("Verifying block %d previous hash: %x", index, block.GetHeader().PreviousHash.GetBytes())
-			log.Printf("Previous block %d hash: %x", index-1, oldBlock.BlockHash.GetBytes())
-			log.Printf("Previous block %d previous hash: %x", index-1, oldBlock.GetHeader().PreviousHash.GetBytes())
+			logger.GetLogger().Printf("block %d hash: %x", index, block.BlockHash.GetBytes())
+			logger.GetLogger().Printf("Verifying block %d previous hash: %x", index, block.GetHeader().PreviousHash.GetBytes())
+			logger.GetLogger().Printf("Previous block %d hash: %x", index-1, oldBlock.BlockHash.GetBytes())
+			logger.GetLogger().Printf("Previous block %d previous hash: %x", index-1, oldBlock.GetHeader().PreviousHash.GetBytes())
 			if !bytes.Equal(block.GetHeader().PreviousHash.GetBytes(), oldBlock.BlockHash.GetBytes()) {
-				log.Printf("ERROR: Block %d previous hash mismatch - Expected: %x, Got: %x",
+				logger.GetLogger().Printf("ERROR: Block %d previous hash mismatch - Expected: %x, Got: %x",
 					index,
 					oldBlock.BlockHash.GetBytes(),
 					block.GetHeader().PreviousHash.GetBytes())
 			}
 
 			if header.Height != index {
-				log.Printf("ERROR: Height mismatch - Block header height: %d, Expected index: %d", header.Height, index)
+				logger.GetLogger().Printf("ERROR: Height mismatch - Block header height: %d, Expected index: %d", header.Height, index)
 				defer services.AdjustShiftInPastInReset(hmax)
 				common.ShiftToPastMutex.RLock()
 				defer common.ShiftToPastMutex.RUnlock()
@@ -239,11 +239,11 @@ func OnMessage(addr [4]byte, m []byte) {
 				panic("not relevant height vs index")
 			}
 
-			log.Printf("Performing base block verification for block %d", index)
+			logger.GetLogger().Printf("Performing base block verification for block %d", index)
 			merkleTrie, err := blocks.CheckBaseBlock(block, oldBlock)
 			defer merkleTrie.Destroy()
 			if err != nil {
-				log.Printf("ERROR: Base block verification failed for block %d: %v", index, err)
+				logger.GetLogger().Printf("ERROR: Base block verification failed for block %d: %v", index, err)
 				tcpip.ReduceAndCheckIfBanIP(addr)
 				services.AdjustShiftInPastInReset(hmax)
 				common.ShiftToPastMutex.RLock()
@@ -255,22 +255,22 @@ func OnMessage(addr [4]byte, m []byte) {
 			merkleTries[index] = merkleTrie
 			hashesMissing := blocks.IsAllTransactions(block)
 			if len(hashesMissing) > 0 {
-				log.Printf("Block %d is missing %d transactions", index, len(hashesMissing))
+				logger.GetLogger().Printf("Block %d is missing %d transactions", index, len(hashesMissing))
 				hashesMissingAll = append(hashesMissingAll, hashesMissing...)
 				incompleteTxn = true
 			} else {
-				log.Printf("Block %d has all transactions verified", index)
+				logger.GetLogger().Printf("Block %d has all transactions verified", index)
 			}
 			//common.IsSyncing.Store(true)
 		}
 
 		if incompleteTxn {
-			log.Printf("Sync incomplete - requesting %d missing transactions from peer", len(hashesMissingAll))
+			logger.GetLogger().Printf("Sync incomplete - requesting %d missing transactions from peer", len(hashesMissingAll))
 			transactionServices.SendGT(addr, hashesMissingAll, "bt")
-			log.Println("Incomplete transactions stored in DB")
+			logger.GetLogger().Println("Incomplete transactions stored in DB")
 			return
 		}
-		log.Println("Starting final block processing and fund transfers")
+		logger.GetLogger().Println("Starting final block processing and fund transfers")
 		common.IsSyncing.Store(true)
 		common.BlockMutex.Lock()
 		defer common.BlockMutex.Unlock()
@@ -279,18 +279,18 @@ func OnMessage(addr [4]byte, m []byte) {
 			block := blcks[i]
 			index := indices[i]
 			if block.GetHeader().Height <= lastGoodBlock {
-				log.Printf("Skipping already verified block %d", index)
+				logger.GetLogger().Printf("Skipping already verified block %d", index)
 				continue
 			}
 
-			log.Printf("Processing final verification and fund transfer for block %d", index)
+			logger.GetLogger().Printf("Processing final verification and fund transfer for block %d", index)
 			oldBlock := blocks.Block{}
 			if was == true {
 				oldBlock = blcks[i-1]
 			} else {
 				oldBlock, err = blocks.LoadBlock(index - 1)
 				if err != nil {
-					log.Printf("ERROR: Failed to load previous block for index %d: %v", index-1, err)
+					logger.GetLogger().Printf("ERROR: Failed to load previous block for index %d: %v", index-1, err)
 					panic("cannot load block")
 				}
 				was = true
@@ -298,33 +298,33 @@ func OnMessage(addr [4]byte, m []byte) {
 
 			err := blocks.CheckBlockAndTransferFunds(&block, oldBlock, merkleTries[index])
 			if err != nil {
-				log.Printf("ERROR: Fund transfer failed for block %d: %v", index, err)
+				logger.GetLogger().Printf("ERROR: Fund transfer failed for block %d: %v", index, err)
 				hashesMissing := blocks.IsAllTransactions(block)
 				if len(hashesMissing) > 0 {
-					log.Printf("Detected %d missing transactions during fund transfer", len(hashesMissing))
+					logger.GetLogger().Printf("Detected %d missing transactions during fund transfer", len(hashesMissing))
 					transactionServices.SendGT(addr, hashesMissing, "bt")
 				}
 				services.ResetAccountsAndBlocksSync(oldBlock.GetHeader().Height)
 				return
 			}
 
-			log.Printf("Storing block %d", index)
+			logger.GetLogger().Printf("Storing block %d", index)
 			err = block.StoreBlock()
 			if err != nil {
-				log.Printf("ERROR: Failed to store block %d: %v", index, err)
+				logger.GetLogger().Printf("ERROR: Failed to store block %d: %v", index, err)
 				services.ResetAccountsAndBlocksSync(oldBlock.GetHeader().Height)
 				return
 			}
 
-			log.Println("Sync New Block success -------------------------------------", block.GetHeader().Height)
+			logger.GetLogger().Println("Sync New Block success -------------------------------------", block.GetHeader().Height)
 			err = account.StoreAccounts(block.GetHeader().Height)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 			}
 
 			err = account.StoreStakingAccounts(block.GetHeader().Height)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 			}
 			common.SetHeight(block.GetHeader().Height)
 

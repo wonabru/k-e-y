@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/okuralabs/okura-node/common"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 	"time"
 )
@@ -32,7 +32,7 @@ func BanIP(ip [4]byte) {
 		return
 	}
 	bannedIPMutex.Lock()
-	log.Println("BANNING ", ip)
+	logger.GetLogger().Println("BANNING ", ip)
 	bannedIP[ip] = common.GetCurrentTimeStampInSecond() + common.BannedTimeSeconds
 	bannedIPMutex.Unlock()
 	if PeersMutex.TryLock() {
@@ -72,14 +72,14 @@ func ReduceAndCheckIfBanIP(ip [4]byte) {
 	select {
 	case <-ctx.Done():
 		// Handle timeout
-		log.Println("ReduceAndCheckIfBanIP: timeout in sending")
+		logger.GetLogger().Println("ReduceAndCheckIfBanIP: timeout in sending")
 
 	default:
 		if _, ok := validPeersConnected[ip]; ok {
 			ReduceTrustRegisterPeer(ip)
 		}
 		if _, ok := validPeersConnected[ip]; !ok {
-			log.Println("not trusted ip", ip)
+			logger.GetLogger().Println("not trusted ip", ip)
 			BanIP(ip)
 		}
 	}

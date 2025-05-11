@@ -2,7 +2,7 @@ package nonceServices
 
 import (
 	"bytes"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"runtime/debug"
 
 	"github.com/okuralabs/okura-node/account"
@@ -26,18 +26,18 @@ func OnMessage(addr [4]byte, m []byte) {
 
 	h := common.GetHeight()
 
-	log.Println("New message nonce from:", addr)
+	logger.GetLogger().Println("New message nonce from:", addr)
 	defer func() {
 		if r := recover(); r != nil {
 			debug.PrintStack()
-			log.Println("recover (nonce Msg)", r)
+			logger.GetLogger().Println("recover (nonce Msg)", r)
 		}
 
 	}()
 
 	isValid, amsg := message.CheckValidMessage(m)
 	if isValid == false {
-		log.Println("nonce msg validation fails")
+		logger.GetLogger().Println("nonce msg validation fails")
 		tcpip.ReduceAndCheckIfBanIP(addr)
 		return
 	}
@@ -67,13 +67,13 @@ func OnMessage(addr [4]byte, m []byte) {
 		nonceHeight := transaction.GetHeight()
 		// checking if proper height
 		if nonceHeight < 1 || nonceHeight != h+1 {
-			//log.Print("nonce height invalid")
+			//logger.GetLogger().Print("nonce height invalid")
 			return
 		}
 
 		isValid = transaction.Verify()
 		if isValid == false {
-			log.Println("nonce signature is invalid")
+			logger.GetLogger().Println("nonce signature is invalid")
 			tcpip.ReduceAndCheckIfBanIP(addr)
 			return
 		}
@@ -95,42 +95,42 @@ func OnMessage(addr [4]byte, m []byte) {
 
 		err = oracles.SavePriceOracle(common.GetInt64FromByte(optData[:8]), nonceHeight, txDelAcc, stakedInDelAccInt)
 		if err != nil {
-			log.Println("could not save price oracle", err)
+			logger.GetLogger().Println("could not save price oracle", err)
 		}
 		err = oracles.SaveRandOracle(common.GetInt64FromByte(optData[8:16]), nonceHeight, txDelAcc, stakedInDelAccInt)
 		if err != nil {
-			log.Println("could not save rand oracle", err)
+			logger.GetLogger().Println("could not save rand oracle", err)
 		}
 
 		vb, b2, err := common.BytesWithLenToBytes(optData[16:])
 		if err != nil {
-			log.Println("could not save voting, parse bytes fails, 1", err)
+			logger.GetLogger().Println("could not save voting, parse bytes fails, 1", err)
 		}
 		err = voting.SaveVotesEncryption1(vb[:], nonceHeight, txDelAcc, stakedInDelAccInt)
 		if err != nil {
-			log.Println("could not save voting, 1", err)
+			logger.GetLogger().Println("could not save voting, 1", err)
 		}
 		vb, b2, err = common.BytesWithLenToBytes(b2[:])
 		if err != nil {
-			log.Println("could not save voting, parse bytes fails, 2", err)
+			logger.GetLogger().Println("could not save voting, parse bytes fails, 2", err)
 		}
 		err = voting.SaveVotesEncryption2(vb[:], nonceHeight, txDelAcc, stakedInDelAccInt)
 		if err != nil {
-			log.Println("could not save voting, 2", err)
+			logger.GetLogger().Println("could not save voting, 2", err)
 		}
 
 		mainAddress := transaction.TxParam.Sender
 
 		// checking if enough coins staked
 		if _, sumStaked, operationalAcc := account.GetStakedInDelegatedAccount(n); int64(sumStaked) < common.MinStakingForNode || !bytes.Equal(operationalAcc.Address[:], mainAddress.GetBytes()) {
-			log.Println("not enough staked coins to be a node or not valid operational account")
+			logger.GetLogger().Println("not enough staked coins to be a node or not valid operational account")
 			tcpip.ReduceAndCheckIfBanIP(addr)
 			return
 		}
 
 		lastBlock, err := blocks.LoadBlock(h)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return
 		}
 
@@ -146,7 +146,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		defer merkleTrie.Destroy()
 
 		if err != nil {
-			log.Println("cannot build merkleTrie")
+			logger.GetLogger().Println("cannot build merkleTrie")
 			return
 		}
 
@@ -156,7 +156,7 @@ func OnMessage(addr [4]byte, m []byte) {
 			transactionsHashes)
 
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return
 
 		}
@@ -166,10 +166,10 @@ func OnMessage(addr [4]byte, m []byte) {
 			if err == nil {
 				services.BroadcastBlock(newBlock)
 			} else {
-				log.Println("new block is not valid. Bad transactions included")
+				logger.GetLogger().Println("new block is not valid. Bad transactions included")
 			}
 		} else {
-			//log.Println("new block is not valid")
+			//logger.GetLogger().Println("new block is not valid")
 		}
 		return
 	case "rb": //reject block
@@ -181,7 +181,7 @@ func OnMessage(addr [4]byte, m []byte) {
 
 		lastBlock, err := blocks.LoadBlock(h)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return
 		}
 		txnbytes := amsg.GetTransactionsBytes()
@@ -192,30 +192,30 @@ func OnMessage(addr [4]byte, m []byte) {
 				bls[k], err = bls[k].GetFromBytes(v[0])
 				newBlock := bls[k]
 				if err != nil {
-					log.Println(err)
-					log.Println("cannot load blocks from bytes")
+					logger.GetLogger().Println(err)
+					logger.GetLogger().Println("cannot load blocks from bytes")
 					tcpip.ReduceAndCheckIfBanIP(addr)
 					return
 				}
 
 				// Special logging for second block in nonce service
 				if newBlock.GetHeader().Height == 1 {
-					log.Printf("=== Processing second block in nonce service ===")
-					log.Printf("Current height: %d", h)
-					log.Printf("Second block hash: %x", newBlock.BlockHash.GetBytes())
-					log.Printf("Second block previous hash: %x", newBlock.GetHeader().PreviousHash.GetBytes())
-					log.Printf("Genesis block hash: %x", lastBlock.BlockHash.GetBytes())
-					log.Printf("Is initial sync: %v", h == 0)
+					logger.GetLogger().Printf("=== Processing second block in nonce service ===")
+					logger.GetLogger().Printf("Current height: %d", h)
+					logger.GetLogger().Printf("Second block hash: %x", newBlock.BlockHash.GetBytes())
+					logger.GetLogger().Printf("Second block previous hash: %x", newBlock.GetHeader().PreviousHash.GetBytes())
+					logger.GetLogger().Printf("Genesis block hash: %x", lastBlock.BlockHash.GetBytes())
+					logger.GetLogger().Printf("Is initial sync: %v", h == 0)
 				}
 
 				if newBlock.GetHeader().Height != h+1 {
-					log.Println("block of too short chain")
+					logger.GetLogger().Println("block of too short chain")
 					return
 				}
 				merkleTrie, err := blocks.CheckBaseBlock(newBlock, lastBlock)
 				defer merkleTrie.Destroy()
 				if err != nil {
-					log.Println(err)
+					logger.GetLogger().Println(err)
 					tcpip.ReduceAndCheckIfBanIP(addr)
 					return
 				}
@@ -229,32 +229,32 @@ func OnMessage(addr [4]byte, m []byte) {
 				if err != nil {
 					services.ResetAccountsAndBlocksSync(lastBlock.GetHeader().Height)
 					common.IsSyncing.Store(false)
-					log.Println("check transfer transactions in block fails", err)
+					logger.GetLogger().Println("check transfer transactions in block fails", err)
 					return
 				}
 				err = newBlock.StoreBlock()
 				if err != nil {
-					log.Println(err)
-					log.Println("cannot store block")
+					logger.GetLogger().Println(err)
+					logger.GetLogger().Println("cannot store block")
 					services.ResetAccountsAndBlocksSync(lastBlock.GetHeader().Height)
 					common.IsSyncing.Store(false)
 					return
 				}
 
-				log.Println("New Block success -------------------------------------", h+1)
+				logger.GetLogger().Println("New Block success -------------------------------------", h+1)
 				err = account.StoreAccounts(newBlock.GetHeader().Height)
 				if err != nil {
-					log.Println(err)
+					logger.GetLogger().Println(err)
 				}
 
 				err = account.StoreStakingAccounts(newBlock.GetHeader().Height)
 				if err != nil {
-					log.Println(err)
+					logger.GetLogger().Println(err)
 				}
 				common.SetHeight(h + 1)
 				sm := statistics.GetStatsManager()
 				sm.UpdateStatistics(newBlock, lastBlock)
-				log.Println("TPS: ", sm.Stats.Tps)
+				logger.GetLogger().Println("TPS: ", sm.Stats.Tps)
 			}
 		}
 	default:

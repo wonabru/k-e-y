@@ -32,7 +32,7 @@ func UpdateAccountStats() {
 	st := sm.Stats
 	err := common.Unmarshal(reply, common.StatDBPrefix, &st)
 	if err != nil {
-		log.Println("Can not unmarshal statistics")
+		logger.GetLogger().Println("Can not unmarshal statistics")
 		common.SetIsPaused(!common.IsPaused(), true)
 		return
 	}
@@ -65,7 +65,7 @@ func UpdateAccountStats() {
 	}
 	err = acc.Unmarshal(re)
 	if err != nil {
-		log.Println("cannot unmarshal account")
+		logger.GetLogger().Println("cannot unmarshal account")
 		common.SetIsPaused(!common.IsPaused(), true)
 		return
 	}
@@ -92,7 +92,7 @@ func UpdateAccountStats() {
 		}
 		err = stakeAccs[i].Unmarshal(re[:len(re)-8])
 		if err != nil {
-			log.Println("cannot unmarshal stake account")
+			logger.GetLogger().Println("cannot unmarshal stake account")
 			common.SetIsPaused(!common.IsPaused(), true)
 			return
 		}

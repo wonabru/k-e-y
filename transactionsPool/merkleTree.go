@@ -3,7 +3,7 @@ package transactionsPool
 import (
 	"bytes"
 	"fmt"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 
 	"github.com/okuralabs/okura-node/common"
@@ -28,7 +28,7 @@ var globalMutex sync.RWMutex
 func InitPermanentTrie() {
 	merkleNodes, err := NewMerkleTree([][]byte{})
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 
 	globalMutex.Lock()
@@ -39,7 +39,7 @@ func InitPermanentTrie() {
 
 	// Use the global MainDB instance
 	if database.MainDB == nil {
-		log.Fatal("MainDB is not initialized")
+		logger.GetLogger().Fatal("MainDB is not initialized")
 	}
 	GlobalMerkleTree.DB = database.MainDB
 }
@@ -86,7 +86,7 @@ func NewMerkleNode(left, right *MerkleNode, data []byte) (*MerkleNode, error) {
 	if left == nil && right == nil {
 		hash, err := common.CalcHashToByte(data)
 		if err != nil {
-			log.Println("hash calculation fails")
+			logger.GetLogger().Println("hash calculation fails")
 			return nil, err
 		}
 		node.Data = hash[:]
@@ -94,7 +94,7 @@ func NewMerkleNode(left, right *MerkleNode, data []byte) (*MerkleNode, error) {
 		prevHashes := append(left.Data, right.Data...)
 		hash, err := common.CalcHashToByte(prevHashes)
 		if err != nil {
-			log.Println("hash calculation fails")
+			logger.GetLogger().Println("hash calculation fails")
 			return nil, err
 		}
 		node.Data = hash[:]
@@ -398,21 +398,21 @@ func RemoveMerkleTrieFromDB(height int64) error {
 	prefix := append(common.RootHashMerkleTreeDBPrefix[:], hb...)
 	err := GlobalMerkleTree.DB.Delete(prefix)
 	if err != nil {
-		log.Println("cannot remove root merkle trie hash", err)
+		logger.GetLogger().Println("cannot remove root merkle trie hash", err)
 		return err
 	}
 
 	prefix = append(common.MerkleNodeDBPrefix[:], hb...)
 	err = GlobalMerkleTree.DB.Delete(prefix)
 	if err != nil {
-		log.Println("cannot remove merkle trie node", err)
+		logger.GetLogger().Println("cannot remove merkle trie node", err)
 		return err
 	}
 
 	prefix = append(common.TransactionsHashesByHeightDBPrefix[:], hb...)
 	err = GlobalMerkleTree.DB.Delete(prefix)
 	if err != nil {
-		log.Println("cannot remove merkle trie transaction hashes", err)
+		logger.GetLogger().Println("cannot remove merkle trie transaction hashes", err)
 		return err
 	}
 	return nil

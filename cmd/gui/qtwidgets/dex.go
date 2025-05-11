@@ -357,7 +357,7 @@ func GetAllTokens() map[string]stateDB.TokenInfo {
 	if len(reply) > 0 {
 		err := json.Unmarshal(reply, &ts)
 		if err != nil {
-			log.Println("Can not unmarshal list of tokens", err)
+			logger.GetLogger().Println("Can not unmarshal list of tokens", err)
 			return map[string]stateDB.TokenInfo{}
 		}
 		return ts
@@ -417,7 +417,7 @@ func GetAccount(a common.Address) (account.Account, error) {
 	}
 	err = acc.Unmarshal(re)
 	if err != nil {
-		log.Println("cannot unmarshal account")
+		logger.GetLogger().Println("cannot unmarshal account")
 		return account.Account{}, err
 	}
 	return acc, nil
@@ -450,7 +450,7 @@ func GetAllPoolsInfo() string {
 		//PriceTokenSeries.Append(float64(time.Now().UTC().Unix()), price)
 	}
 
-	//log.Println(PriceTokenSeries)
+	//logger.GetLogger().Println(PriceTokenSeries)
 	PoolsSizeLabel.SetPlainText(txt)
 	return txt
 }

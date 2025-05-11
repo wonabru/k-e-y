@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
-
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/database"
+	"github.com/okuralabs/okura-node/logger"
 )
 
 type StakingAccountsType struct {
@@ -76,7 +75,7 @@ func StoreStakingAccounts(height int64) error {
 		prefix = append(prefix, byte(i))
 		err := database.MainDB.Put(prefix, k[:])
 		if err != nil {
-			log.Println("cannot store accounts", err)
+			logger.GetLogger().Println("cannot store accounts", err)
 		}
 	}
 	return nil
@@ -89,7 +88,7 @@ func LoadStakingAccounts(height int64) error {
 	if height < 0 {
 		height, err = LastHeightStoredInStakingAccounts()
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 
@@ -99,12 +98,12 @@ func LoadStakingAccounts(height int64) error {
 		prefix = append(prefix, byte(i))
 		b, err := database.MainDB.Get(prefix)
 		if err != nil || b == nil {
-			log.Println("cannot load accounts", err)
+			logger.GetLogger().Println("cannot load accounts", err)
 			continue
 		}
 		err = (&StakingAccounts[i]).Unmarshal(b)
 		if err != nil {
-			log.Println("cannot unmarshal accounts", err)
+			logger.GetLogger().Println("cannot unmarshal accounts", err)
 			return err
 		}
 	}
@@ -126,7 +125,7 @@ func RemoveStakingAccountsFromDB(height int64) error {
 		prefix = append(prefix, byte(i))
 		err := database.MainDB.Delete(prefix)
 		if err != nil {
-			log.Println("cannot remove account", err)
+			logger.GetLogger().Println("cannot remove account", err)
 			return err
 		}
 	}

@@ -4,8 +4,8 @@ import (
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/blocks"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/transactionsPool"
-	"log"
 )
 
 func AdjustShiftInPastInReset(height int64) {
@@ -44,7 +44,7 @@ func RevertVMToBlockHeight(height int64) bool {
 
 func ResetAccountsAndBlocksSync(height int64) {
 	if height < 0 {
-		log.Println("try to reset from negative height")
+		logger.GetLogger().Println("try to reset from negative height")
 		height = 0
 		h := common.GetHeight()
 		if h == 0 {
@@ -64,15 +64,15 @@ func ResetAccountsAndBlocksSync(height int64) {
 
 	ha, err := account.LastHeightStoredInAccounts()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	hsa, err := account.LastHeightStoredInStakingAccounts()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	hb, err := blocks.LastHeightStoredInBlocks()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	err = blocks.SetEncryptionFromBlock(height)
 	if err != nil {
@@ -80,46 +80,46 @@ func ResetAccountsAndBlocksSync(height int64) {
 	}
 	hd, err := account.LastHeightStoredInDexAccounts()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 
 	if RevertVMToBlockHeight(height) == false {
-		log.Println("reverting VM to height ", height, " fails.")
+		logger.GetLogger().Println("reverting VM to height ", height, " fails.")
 	}
 
 	for i := hb; i > height; i-- {
 		err := blocks.RemoveBlockFromDB(i)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 	for i := ha; i > height; i-- {
 		err := account.RemoveAccountsFromDB(i)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 	for i := hsa; i > height; i-- {
 		err := account.RemoveStakingAccountsFromDB(i)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 	for i := hd; i > height; i-- {
 		err := account.RemoveDexAccountsFromDB(i)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 
 	hm, err := transactionsPool.LastHeightStoredInMerleTrie()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 	}
 	for i := hm; i > height; i-- {
 		err := transactionsPool.RemoveMerkleTrieFromDB(i)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 

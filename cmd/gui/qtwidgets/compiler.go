@@ -61,7 +61,7 @@ func ShowSmartContractPage() *widgets.QTabWidget {
 	listFunctionsABI := widgets.NewQComboBox(nil)
 	widget.Layout().AddWidget(listFunctionsABI)
 	listFunctionsABI.ConnectEnterEvent(func(event *core.QEvent) {
-		log.Println("Event type:", event.Type())
+		logger.GetLogger().Println("Event type:", event.Type())
 		if event.IsAccepted() {
 			item := listFunctionsABI.CurrentText()
 			if item != "" {
@@ -93,7 +93,7 @@ func ShowSmartContractPage() *widgets.QTabWidget {
 					} else { // decimal number
 						bi, err := strconv.ParseInt(s, 10, 64)
 						if err != nil {
-							log.Println("error in number conversion", err, "Type of ", s, "Currently not implemented")
+							logger.GetLogger().Println("error in number conversion", err, "Type of ", s, "Currently not implemented")
 							break
 						}
 						b = common.LeftPadBytes(common.GetInt64ToBytesSC(bi), 32)
@@ -112,7 +112,7 @@ func ShowSmartContractPage() *widgets.QTabWidget {
 		js, _ := os.ReadFile("smartContracts/contract.abi")
 		var funcs []map[string]any
 		json.Unmarshal(js, &funcs)
-		log.Printf("%+v", funcs)
+		logger.GetLogger().Printf("%+v", funcs)
 		ls := []string{}
 		for _, v := range funcs {
 			if v["name"] != nil {

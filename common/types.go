@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/okuralabs/okura-node/crypto/blake2b"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 	"sync/atomic"
 )
@@ -171,7 +171,7 @@ func SignatureLength2() int {
 
 func (a PubKey) GetLength() int {
 	if PubKeyLength() == PubKeyLength2() {
-		log.Fatal("pubkey length in bytes cannot be equal")
+		logger.GetLogger().Fatal("pubkey length in bytes cannot be equal")
 	}
 	return len(a.ByteValue)
 }
@@ -219,7 +219,7 @@ func BytesToAddress(b []byte) (Address, error) {
 	var a Address
 	err := a.Init(b)
 	if err != nil {
-		log.Println("Cannot init Address")
+		logger.GetLogger().Println("Cannot init Address")
 		return a, err
 	}
 	return a, nil

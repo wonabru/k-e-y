@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/common/hexutil"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"math"
 	"strconv"
 )
@@ -74,7 +74,7 @@ func (a *Account) ModifyAccountToMultiSign(numApprovals uint8, addresses []commo
 func SetAccountByAddressBytes(address []byte) Account {
 	dexAccount := GetAccountByAddressBytes(address)
 	if !bytes.Equal(dexAccount.Address[:], address) {
-		log.Println("no account found, will be created")
+		logger.GetLogger().Println("no account found, will be created")
 		addrb := [common.AddressLength]byte{}
 		copy(addrb[:], address[:common.AddressLength])
 		dexAccount = Account{

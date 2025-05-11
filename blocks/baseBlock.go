@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/crypto/oqs"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/pubkeys"
 	"github.com/okuralabs/okura-node/wallet"
-	"log"
 )
 
 type BaseHeader struct {
@@ -102,26 +102,26 @@ func (b *BaseHeader) GetBytes() []byte {
 
 	rb = append(rb, common.BytesToLenAndBytes(b.SignatureMessage)...)
 	rb = append(rb, common.BytesToLenAndBytes(b.Signature.GetBytes())...)
-	//log.Println("block ", b.Height, " len bytes ", len(rb))
+	//logger.GetLogger().Println("block ", b.Height, " len bytes ", len(rb))
 	return rb
 }
 
 func (bh *BaseHeader) Verify() bool {
 	signatureBlockHeaderMessage := bh.GetBytesWithoutSignature()
 	if !bytes.Equal(signatureBlockHeaderMessage, bh.SignatureMessage) {
-		log.Println("signatures are different")
+		logger.GetLogger().Println("signatures are different")
 		return false
 	}
 	calcHash, err := common.CalcHashToByte(signatureBlockHeaderMessage)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return false
 	}
 	a := bh.OperatorAccount
 	primary := common.GetNodeSignPrimary(bh.Height)
 	pk, err := pubkeys.LoadPubKeyWithPrimary(a, primary)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return false
 	}
 	return wallet.Verify(calcHash, bh.Signature.GetBytes(), pk.GetBytes())
@@ -145,7 +145,7 @@ func (bh *BaseHeader) GetFromBytes(b []byte) ([]byte, error) {
 	if len(b) < 117+common.SignatureLength() && len(b) < 117+common.SignatureLength2() {
 		return nil, fmt.Errorf("not enough bytes to decode BaseHeader")
 	}
-	//log.Println("block decompile len bytes ", len(b))
+	//logger.GetLogger().Println("block decompile len bytes ", len(b))
 
 	bh.PreviousHash = common.GetHashFromBytes(b[:32])
 	bh.Difficulty = common.GetInt32FromByte(b[32:36])

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/database"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"sync"
 )
 
@@ -75,7 +75,7 @@ func StoreDexAccounts(height int64) error {
 	prefix := append(common.DexAccountsDBPrefix[:], hb...)
 	err := database.MainDB.Put(prefix, k[:])
 	if err != nil {
-		log.Println("cannot store dex accounts", err)
+		logger.GetLogger().Println("cannot store dex accounts", err)
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func LoadDexAccounts(height int64) error {
 	if height < 0 {
 		height, err = LastHeightStoredInDexAccounts()
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 		}
 	}
 
@@ -96,12 +96,12 @@ func LoadDexAccounts(height int64) error {
 	prefix := append(common.DexAccountsDBPrefix[:], hb...)
 	b, err := database.MainDB.Get(prefix)
 	if err != nil {
-		log.Println("cannot load accounts", err)
+		logger.GetLogger().Println("cannot load accounts", err)
 		return err
 	}
 	err = (&DexAccounts).Unmarshal(b)
 	if err != nil {
-		log.Println("cannot unmarshal accounts", err)
+		logger.GetLogger().Println("cannot unmarshal accounts", err)
 		return err
 	}
 
@@ -137,7 +137,7 @@ func RemoveDexAccountsFromDB(height int64) error {
 	prefix := append(common.DexAccountsDBPrefix[:], hb...)
 	err := database.MainDB.Delete(prefix)
 	if err != nil {
-		log.Println("cannot remove account", err)
+		logger.GetLogger().Println("cannot remove account", err)
 		return err
 	}
 	return nil

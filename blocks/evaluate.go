@@ -8,9 +8,9 @@ import (
 	"github.com/okuralabs/okura-node/common"
 	vm "github.com/okuralabs/okura-node/core/evm"
 	"github.com/okuralabs/okura-node/core/stateDB"
+	loggerMain "github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/params"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
-	"log"
 	"math"
 	"math/big"
 	"sync"
@@ -164,7 +164,7 @@ func GenerateOptDataDEX(tx transactionsDefinition.Transaction, operation int) ([
 		fromAccountAddress = sender
 	}
 
-	log.Println(optData)
+	loggerMain.GetLogger().Println(optData)
 	return common.Hex2Bytes(optData), fromAccountAddress, amountCoinInt64, amountTokenInt64, price, nil
 }
 
@@ -181,7 +181,7 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 			poolprefix = common.TransactionDBPrefix[:]
 			t, err = transactionsDefinition.LoadFromDBPoolTx(poolprefix, th.GetBytes())
 			if err != nil {
-				log.Println(err)
+				loggerMain.GetLogger().Println(err)
 				return false, logs, map[[common.HashLength]byte]common.Address{}, map[[common.AddressLength]byte][]byte{}, map[[common.HashLength]byte][]byte{}
 			}
 		}
@@ -203,21 +203,21 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 			operation := n - 512
 			//DEX checking transaction
 			dexOptData, fromAddress, coinAmount, tokenAmount, price, err := GenerateOptDataDEX(t, operation)
-			log.Printf("Token Price: %v\n", price)
+			loggerMain.GetLogger().Printf("Token Price: %v\n", price)
 			if err != nil {
-				log.Println(err)
+				loggerMain.GetLogger().Println(err)
 				return false, nil, nil, nil, nil
 			}
 			// transfering tokens
 			l, _, _, _, err := EvaluateSCDex(t.ContractAddress, fromAddress, dexOptData, t, bl)
 			if err != nil {
-				log.Println(err)
+				loggerMain.GetLogger().Println(err)
 				return false, logs, map[[common.HashLength]byte]common.Address{}, map[[common.AddressLength]byte][]byte{}, map[[common.HashLength]byte][]byte{}
 			}
 			t.OutputLogs = []byte(l)
 			err = t.StoreToDBPoolTx(poolprefix)
 			if err != nil {
-				log.Println(err)
+				loggerMain.GetLogger().Println(err)
 				return false, logs, map[[common.HashLength]byte]common.Address{}, map[[common.AddressLength]byte][]byte{}, map[[common.HashLength]byte][]byte{}
 			}
 			aa := [common.AddressLength]byte{}
@@ -229,12 +229,12 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 
 			err = AddBalance(aa, coinAmount)
 			if err != nil {
-				log.Println(err)
+				loggerMain.GetLogger().Println(err)
 				return false, nil, nil, nil, nil
 			}
 			err = AddBalance(da, -coinAmount)
 			if err != nil {
-				log.Println(err)
+				loggerMain.GetLogger().Println(err)
 				return false, nil, nil, nil, nil
 			}
 
@@ -244,7 +244,7 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 			ti, ok := State.Tokens[ba]
 			StateMutex.RUnlock()
 			if !ok {
-				log.Println("no token with a given address")
+				loggerMain.GetLogger().Println("no token with a given address")
 				return false, nil, nil, nil, nil
 			}
 
@@ -316,7 +316,7 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 			}
 		}
 		if err != nil {
-			log.Println(err)
+			loggerMain.GetLogger().Println(err)
 			return false, logs, map[[common.HashLength]byte]common.Address{}, map[[common.AddressLength]byte][]byte{}, map[[common.HashLength]byte][]byte{}
 		}
 		//TODO we should refund left gas
@@ -327,7 +327,7 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 		t.OutputLogs = outputLogs[:]
 		err = t.StoreToDBPoolTx(poolprefix)
 		if err != nil {
-			log.Println(err)
+			loggerMain.GetLogger().Println(err)
 			return false, logs, map[[common.HashLength]byte]common.Address{}, map[[common.AddressLength]byte][]byte{}, map[[common.HashLength]byte][]byte{}
 		}
 		hh := [common.HashLength]byte{}
@@ -344,7 +344,7 @@ func EvaluateSCForBlock(bl Block) (bool, map[[common.HashLength]byte]string, map
 
 func EvaluateSC(tx transactionsDefinition.Transaction, bl Block) (logs string, ret []byte, address common.Address, leftOverGas uint64, err error) {
 	if len(tx.TxData.OptData) == 0 {
-		log.Println("no smart contract in transaction")
+		loggerMain.GetLogger().Println("no smart contract in transaction")
 		return logs, ret, address, leftOverGas, nil
 	}
 	gasMult := 10.0
@@ -395,14 +395,14 @@ func EvaluateSC(tx transactionsDefinition.Transaction, bl Block) (logs string, r
 		ret, address, leftOverGas, err = VM.Create(vm.AccountRef(origin), code, uint64(tx.GasUsage)*uint64(gasMult), new(big.Int).SetInt64(0), nonce)
 
 		if err != nil {
-			log.Println(err)
+			loggerMain.GetLogger().Println(err)
 			return logger.ToString(), ret, address, leftOverGas, err
 		}
 	} else {
 		address = tx.TxData.Recipient
 		ret, leftOverGas, err = VM.Call(vm.AccountRef(origin), address, code, uint64(tx.GasUsage)*uint64(gasMult), new(big.Int).SetInt64(0))
 		if err != nil {
-			log.Println(err)
+			loggerMain.GetLogger().Println(err)
 			return logger.ToString(), ret, address, leftOverGas, err
 		}
 	}
@@ -508,7 +508,7 @@ func GetViewFunctionReturns(contractAddr common.Address, OptData []byte, bl Bloc
 	// Konwersja hex do bajtów
 	dataBytes, err := hex.DecodeString(logger.Output)
 	if err != nil {
-		log.Fatal(err)
+		loggerMain.GetLogger().Fatal(err)
 	}
 
 	// Konwersja bajtów do UTF-8
@@ -553,13 +553,13 @@ func GetBalance(coin common.Address, owner common.Address) (int64, error) {
 
 	bl, err = LoadBlock(h - 1)
 	if err != nil {
-		log.Println(err)
+		loggerMain.GetLogger().Println(err)
 		return 0, err
 	}
 
 	output, _, _, _, _, err := GetViewFunctionReturns(coin, inputs, bl)
 	if err != nil {
-		log.Println("Some error in SC query Get Balance", err)
+		loggerMain.GetLogger().Println("Some error in SC query Get Balance", err)
 		return 0, err
 	}
 	if output != "" {

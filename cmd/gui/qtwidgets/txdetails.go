@@ -122,7 +122,7 @@ func GetDetails(h string) string {
 		tx := transactionsDefinition.Transaction{}
 		tx, _, err := tx.GetFromBytes(reply[2:])
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return ""
 		}
 		return tx.GetString()
@@ -130,7 +130,7 @@ func GetDetails(h string) string {
 		acc := account.Account{}
 		err = (&acc).Unmarshal(reply[2:])
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return ""
 		}
 		return AccountDetailsToString(acc)
@@ -138,14 +138,14 @@ func GetDetails(h string) string {
 		bb := blocks.Block{}
 		bb, err = bb.GetFromBytes(reply[2:])
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return ""
 		}
 		return bb.GetString()
 	default:
 
 	}
-	log.Println("Can not unmarshal transaction")
+	logger.GetLogger().Println("Can not unmarshal transaction")
 	return string(reply)
 }
 

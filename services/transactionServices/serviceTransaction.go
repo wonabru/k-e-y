@@ -2,7 +2,7 @@ package transactionServices
 
 import (
 	"bytes"
-	"log"
+	"github.com/okuralabs/okura-node/logger"
 	"time"
 
 	"github.com/okuralabs/okura-node/common"
@@ -73,7 +73,7 @@ Q:
 			}
 		case <-timeout:
 			// Handle timeout
-			//log.Println("broadcastTransactionsMsgInLoop: Timeout occurred")
+			//logger.GetLogger().Println("broadcastTransactionsMsgInLoop: Timeout occurred")
 			// You can break the loop or return from the function here
 			break
 		}
@@ -89,11 +89,11 @@ func SendTransactionMsg(ip [4]byte, topic [2]byte) {
 	txs := transactionsPool.PoolsTx.PeekTransactions(int(common.MaxTransactionsPerBlock), 0)
 	n, err := GenerateTransactionMsg(txs, []byte("tx"), topic)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Println(err)
 		return
 	}
 	if !Send(ip, n.GetBytes()) {
-		log.Println("could not send standard transaction")
+		logger.GetLogger().Println("could not send standard transaction")
 	}
 }
 
@@ -101,10 +101,10 @@ func SendGT(ip [4]byte, txsHashes [][]byte, syncPre string) {
 	topic := tcpip.TransactionTopic
 	transactionMsg, err := GenerateTransactionMsgGT(txsHashes, []byte(syncPre), topic)
 	if err != nil {
-		log.Println("cannot generate transaction msg", err)
+		logger.GetLogger().Println("cannot generate transaction msg", err)
 	}
 	if !Send(ip, transactionMsg.GetBytes()) {
-		log.Println("could not send send transaction in GT message")
+		logger.GetLogger().Println("could not send send transaction in GT message")
 	}
 }
 
@@ -125,9 +125,9 @@ func Spread(ignoreAddr [4]byte, nb []byte) {
 	for topicip, _ := range peers {
 		copy(ip[:], topicip[2:])
 		if !bytes.Equal(ip[:], ignoreAddr[:]) && !bytes.Equal(ip[:], tcpip.MyIP[:]) {
-			//log.Println("send transactions to ", int(ip[0]), int(ip[1]), int(ip[2]), int(ip[3]))
+			//logger.GetLogger().Println("send transactions to ", int(ip[0]), int(ip[1]), int(ip[2]), int(ip[3]))
 			if !Send(ip, nb) {
-				log.Println("could not broadcast transaction")
+				logger.GetLogger().Println("could not broadcast transaction")
 			}
 			break
 		}
@@ -142,7 +142,7 @@ func StartSubscribingTransactionMsg(ip [4]byte) {
 	recvChan := make(chan []byte, 100) // Increased buffer size
 	quit := false
 	var ipr [4]byte
-	log.Printf("Starting transaction subscription to peer: %v", ip)
+	logger.GetLogger().Printf("Starting transaction subscription to peer: %v", ip)
 
 	go func() {
 		for !quit {
@@ -155,12 +155,12 @@ func StartSubscribingTransactionMsg(ip [4]byte) {
 		}
 	}()
 
-	log.Println("Entering transaction message receiving loop for peer:", ip)
+	logger.GetLogger().Println("Entering transaction message receiving loop for peer:", ip)
 	for !quit {
 		select {
 		case s := <-recvChan:
 			if len(s) == 4 && bytes.Equal(s, []byte("EXIT")) {
-				log.Printf("Received EXIT signal for peer %v", ip)
+				logger.GetLogger().Printf("Received EXIT signal for peer %v", ip)
 				quit = true
 				break
 			}
@@ -169,11 +169,11 @@ func StartSubscribingTransactionMsg(ip [4]byte) {
 				OnMessage(ipr, s[4:])
 			}
 		case <-tcpip.Quit:
-			log.Printf("Received quit signal for peer %v", ip)
+			logger.GetLogger().Printf("Received quit signal for peer %v", ip)
 			quit = true
 		default:
 			time.Sleep(time.Millisecond * 100) // Reduced sleep time
 		}
 	}
-	log.Println("Exiting transaction message receiving loop for peer:", ip)
+	logger.GetLogger().Println("Exiting transaction message receiving loop for peer:", ip)
 }

@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ func Init() {
 
 	mainWallet, err = Load(255, password)
 	if err != nil {
-		log.Fatalf("cannot load wallet")
+		logger.GetLogger().Fatalf("cannot load wallet")
 	}
 }
 
@@ -87,7 +86,7 @@ func TestSignAndVerify(t *testing.T) {
 	message := []byte("Hello, world!")
 	signature, err := wallet.Sign(message, true)
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	// Verify the signature using the wallet's public key
 	isVerified := Verify(message, signature.GetBytes(), wallet.PublicKey.GetBytes())

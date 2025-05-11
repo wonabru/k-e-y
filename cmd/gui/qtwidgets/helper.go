@@ -7,7 +7,6 @@ import (
 	"github.com/okuralabs/okura-node/common"
 	clientrpc "github.com/okuralabs/okura-node/rpc/client"
 	"github.com/okuralabs/okura-node/wallet"
-	"log"
 	"os"
 )
 
@@ -23,7 +22,7 @@ func SignMessage(line []byte) []byte {
 	}
 	if verificationNeeded {
 		if MainWallet == nil || (!MainWallet.Check() || !MainWallet.Check2()) {
-			log.Println("wallet not loaded yet")
+			logger.GetLogger().Println("wallet not loaded yet")
 			return line
 		}
 		if common.IsPaused() == false {
@@ -31,7 +30,7 @@ func SignMessage(line []byte) []byte {
 			line = common.BytesToLenAndBytes(line)
 			sign, err := MainWallet.Sign(line, true)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 				return line
 			}
 			line = append(line, sign.GetBytes()...)
@@ -41,7 +40,7 @@ func SignMessage(line []byte) []byte {
 			line = common.BytesToLenAndBytes(line)
 			sign, err := MainWallet.Sign(line, false)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Println(err)
 				return line
 			}
 			line = append(line, sign.GetBytes()...)
@@ -54,12 +53,12 @@ func SignMessage(line []byte) []byte {
 
 func StoreWalletNewGenerated(w *wallet.Wallet) error {
 	if err != nil {
-		log.Printf("Can not create wallet. Error %v", err)
+		logger.GetLogger().Printf("Can not create wallet. Error %v", err)
 	}
 	folderPath := w.HomePath
 	err = os.MkdirAll(w.HomePath, 0755)
 	if err != nil {
-		log.Fatal(err)
+		logger.GetLogger().Fatal(err)
 	}
 	fileInfo, err := os.Stat(folderPath)
 	if err != nil {

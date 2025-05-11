@@ -3,8 +3,8 @@ package transactionsPool
 import (
 	"container/heap"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
-	"log"
 	"sync"
 )
 
@@ -81,7 +81,7 @@ func (tp *TransactionPool) AddTransaction(tx transactionsDefinition.Transaction,
 	tp.rwmutex.Lock()
 	if _, exists := tp.bannedTransactions[hash]; exists {
 		tp.rwmutex.Unlock()
-		log.Println("transaction not added. banned")
+		logger.GetLogger().Println("transaction not added. banned")
 		return false
 	}
 	if _, exists := tp.transactions[hash]; !exists {
@@ -94,7 +94,7 @@ func (tp *TransactionPool) AddTransaction(tx transactionsDefinition.Transaction,
 		} else if tp.typePool == uint8(2) {
 			item = NewItem(tx, common.GetInt64FromByte(hash2check.GetBytes()))
 		} else {
-			log.Println("not implemented, AddTransaction")
+			logger.GetLogger().Println("not implemented, AddTransaction")
 			return false
 		}
 
@@ -135,7 +135,7 @@ func (tp *TransactionPool) PeekTransactions(n int, heightOrHash int64) []transac
 					topTransactions = append(topTransactions, tp.transactions[hash])
 				}
 			} else {
-				log.Println("not implemented, PeekTransactions")
+				logger.GetLogger().Println("not implemented, PeekTransactions")
 			}
 
 		}

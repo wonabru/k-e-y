@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
-
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/database"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/pubkeys"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
 	"github.com/okuralabs/okura-node/wallet"
@@ -103,7 +102,7 @@ func StorePubKeyInPatriciaTrie(pk common.PubKey) error {
 		if err.Error() != "key not found" {
 			return err
 		}
-		log.Println("key not found")
+		logger.GetLogger().Println("key not found")
 		addresses = []common.Address{}
 	}
 	if len(addresses) == 0 {
@@ -124,7 +123,7 @@ func StorePubKeyInPatriciaTrie(pk common.PubKey) error {
 		}
 	}
 	if exist {
-		//log.Println(" address from pub key is just stored in mainaddress of patricia trie")
+		//logger.GetLogger().Println(" address from pub key is just stored in mainaddress of patricia trie")
 		return nil
 	}
 

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"github.com/okuralabs/okura-node/blocks"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/message"
 	"github.com/okuralabs/okura-node/services"
 	"github.com/okuralabs/okura-node/tcpip"
-	"log"
 	"time"
 )
 
@@ -34,7 +34,7 @@ func generateSyncMsgHeight() []byte {
 	n.TransactionsBytes[[2]byte{'L', 'H'}] = [][]byte{common.GetByteInt64(h)}
 	lastBlockHash, err := blocks.LoadHashOfBlock(h)
 	if err != nil {
-		log.Println("Can not obtain root hashes from DB", err)
+		logger.GetLogger().Println("Can not obtain root hashes from DB", err)
 		return []byte("")
 	}
 	n.TransactionsBytes[[2]byte{'L', 'B'}] = [][]byte{lastBlockHash}
@@ -83,16 +83,16 @@ func generateSyncMsgGetHeaders(height int64) []byte {
 
 func generateSyncMsgSendHeaders(bHeight int64, height int64) []byte {
 	if height < 0 {
-		log.Println("height cannot be smaller than 0")
+		logger.GetLogger().Println("height cannot be smaller than 0")
 		return []byte{}
 	}
 	h := common.GetHeight()
 	if height > h {
-		log.Println("Warning: height cannot be larger than last height")
+		logger.GetLogger().Println("Warning: height cannot be larger than last height")
 		height = h
 	}
 	if bHeight < 0 || bHeight > height {
-		log.Println("starting height cannot be smaller than 0")
+		logger.GetLogger().Println("starting height cannot be smaller than 0")
 		return []byte{}
 	}
 	bm := message.BaseMessage{
@@ -109,7 +109,7 @@ func generateSyncMsgSendHeaders(bHeight int64, height int64) []byte {
 		indices = append(indices, common.GetByteInt64(i))
 		block, err := blocks.LoadBlock(i)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Println(err)
 			return []byte{}
 		}
 		blcks = append(blcks, block.GetBytes())
@@ -123,14 +123,14 @@ func generateSyncMsgSendHeaders(bHeight int64, height int64) []byte {
 func SendHeaders(addr [4]byte, bHeight int64, height int64) {
 	n := generateSyncMsgSendHeaders(bHeight, height)
 	if !Send(addr, n) {
-		log.Println("could not send headers")
+		logger.GetLogger().Println("could not send headers")
 	}
 }
 
 func SendGetHeaders(addr [4]byte, height int64) {
 	n := generateSyncMsgGetHeaders(height)
 	if !Send(addr, n) {
-		log.Println("could not send get headers")
+		logger.GetLogger().Println("could not send get headers")
 	}
 }
 
@@ -148,7 +148,7 @@ func sendSyncMsgInLoop() {
 	for range time.Tick(time.Second) {
 		n := generateSyncMsgHeight()
 		if !Send([4]byte{0, 0, 0, 0}, n) {
-			log.Println("could not send 'hi' message")
+			logger.GetLogger().Println("could not send 'hi' message")
 		}
 	}
 }
@@ -164,7 +164,7 @@ func StartSubscribingSyncMsg(ip [4]byte) {
 	var ipr [4]byte
 	quit := false
 	go tcpip.StartNewConnection(ip, recvChan, tcpip.SyncTopic)
-	log.Println("Enter connection receiving loop (sync msg)", ip)
+	logger.GetLogger().Println("Enter connection receiving loop (sync msg)", ip)
 	for !quit {
 		select {
 		case s := <-recvChan:
@@ -183,5 +183,5 @@ func StartSubscribingSyncMsg(ip [4]byte) {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	log.Println("Exit connection receiving loop (sync msg)", ip)
+	logger.GetLogger().Println("Exit connection receiving loop (sync msg)", ip)
 }

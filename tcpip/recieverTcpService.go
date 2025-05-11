@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	"golang.org/x/exp/rand"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -51,39 +51,39 @@ func init() {
 	MyIP = GetIp()
 	copy(InternalIP[:], MyIP[:])
 
-	log.Println("Discover MyIP: ", MyIP)
+	logger.GetLogger().Println("Discover MyIP: ", MyIP)
 	for k := range Ports {
 		tcpConnections[k] = map[[4]byte]*net.TCPConn{}
 	}
 	// Get NODE_IP environment variable
 	ips := os.Getenv("NODE_IP")
 	if ips == "" {
-		log.Println("Warning: NODE_IP environment variable is not set")
+		logger.GetLogger().Println("Warning: NODE_IP environment variable is not set")
 		return
 	}
 
 	// Parse the IP address
 	ip := net.ParseIP(ips)
 	if ip == nil {
-		log.Fatalf("Failed to parse NODE_IP '%s' as an IP address", ips)
+		logger.GetLogger().Fatalf("Failed to parse NODE_IP '%s' as an IP address", ips)
 	}
 
 	ip4 := ip.To4()
 	if ip4 == nil {
-		log.Fatalf("Failed to parse NODE_IP '%s' as 4 byte format", ips)
+		logger.GetLogger().Fatalf("Failed to parse NODE_IP '%s' as 4 byte format", ips)
 	}
 	// Assign the parsed IP to tcpip.MyIP
 	MyIP = [4]byte(ip4)
 
 	// Rest of your application logic here...
-	log.Printf("Successfully set NODE_IP to %d.%d.%d.%d", int(MyIP[0]), int(MyIP[1]), int(MyIP[2]), int(MyIP[3]))
+	logger.GetLogger().Printf("Successfully set NODE_IP to %d.%d.%d.%d", int(MyIP[0]), int(MyIP[1]), int(MyIP[2]), int(MyIP[3]))
 	validPeersConnected[MyIP] = 100
 }
 
 func GetIp() [4]byte {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		log.Println("Can not obtain net interface")
+		logger.GetLogger().Println("Can not obtain net interface")
 		return [4]byte{}
 	}
 	ipInternal := [4]byte{}
@@ -91,7 +91,7 @@ func GetIp() [4]byte {
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
 		if err != nil {
-			log.Println("Can not get net addresses")
+			logger.GetLogger().Println("Can not get net addresses")
 			return [4]byte{}
 		}
 		for _, addr := range addrs {
@@ -123,12 +123,12 @@ func Listen(ip [4]byte, port int) (*net.TCPListener, error) {
 	protocol := "tcp"
 	addr, err := net.ResolveTCPAddr(protocol, ipport)
 	if err != nil {
-		log.Println("Wrong Address", err)
+		logger.GetLogger().Println("Wrong Address", err)
 		return nil, err
 	}
 	conn, err := net.ListenTCP(protocol, addr)
 	if err != nil {
-		log.Printf("Some error %v\n", err)
+		logger.GetLogger().Printf("Some error %v\n", err)
 		return nil, err
 	}
 	return conn, nil
@@ -154,7 +154,7 @@ func Send(conn *net.TCPConn, message []byte) error {
 	message = append(message, []byte("<-END->")...)
 	_, err := conn.Write(message)
 	if err != nil {
-		log.Printf("Can't send response: %v", err)
+		logger.GetLogger().Printf("Can't send response: %v", err)
 		return err
 	}
 	return nil
@@ -175,7 +175,7 @@ func Receive(topic [2]byte, conn *net.TCPConn) []byte {
 		if err == io.EOF {
 			return []byte("<-CLS->")
 		}
-		log.Println("n=", n, "err", err.Error())
+		logger.GetLogger().Println("n=", n, "err", err.Error())
 		//handleConnectionError(err, topic, conn)
 		return []byte("<-ERR->")
 	}
@@ -240,7 +240,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 		ip[i] = byte(num)
 	}
 	if IsIPBanned(ip) {
-		log.Println("IP is BANNED", ip)
+		logger.GetLogger().Println("IP is BANNED", ip)
 		return false
 	}
 	var topicipBytes [6]byte
@@ -251,16 +251,16 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 
 	// Check if we already have a connection for this peer
 	if existingConn, ok := tcpConnections[topic][ip]; ok {
-		log.Println("connection just exists")
+		logger.GetLogger().Println("connection just exists")
 		//return false
 		// Try to close the existing connection if it's still open
 		if existingConn != nil {
 			err := existingConn.SetKeepAlivePeriod(1 * time.Second)
 			if err != nil {
-				log.Printf("Error setting keep-alive period. Closing for peer %v on topic %v", ip, topic)
+				logger.GetLogger().Printf("Error setting keep-alive period. Closing for peer %v on topic %v", ip, topic)
 				existingConn.Close()
 			} else {
-				log.Printf("active existing connection for peer %v on topic %v", ip, topic)
+				logger.GetLogger().Printf("active existing connection for peer %v on topic %v", ip, topic)
 				return false
 			}
 		}
@@ -271,7 +271,7 @@ func RegisterPeer(topic [2]byte, tcpConn *net.TCPConn) bool {
 		validPeersConnected[ip] = common.ConnectionMaxTries
 	}
 
-	log.Printf("Registering new connection from address %s on topic %v", ra[0], topic)
+	logger.GetLogger().Printf("Registering new connection from address %s on topic %v", ra[0], topic)
 
 	// Initialize the map for the topic if it doesn't exist
 	if _, ok := tcpConnections[topic]; !ok {
@@ -339,7 +339,7 @@ func LookUpForNewPeersToConnect(chanPeer chan []byte) {
 		for topicip, topic := range peersConnected {
 			_, ok := oldPeers[topicip]
 			if ok == false {
-				log.Println("Found new peer with ip", topicip)
+				logger.GetLogger().Println("Found new peer with ip", topicip)
 				oldPeers[topicip] = topic
 				chanPeer <- topicip[:]
 			}
@@ -347,7 +347,7 @@ func LookUpForNewPeersToConnect(chanPeer chan []byte) {
 		for topicip := range oldPeers {
 			_, ok := peersConnected[topicip]
 			if ok == false {
-				log.Println("New peer is deleted with ip", topicip)
+				logger.GetLogger().Println("New peer is deleted with ip", topicip)
 				delete(oldPeers, topicip)
 			}
 		}

@@ -27,7 +27,7 @@ func ConnectRPC(ip string) {
 		if err == nil {
 			break
 		}
-		log.Printf("Failed to connect to RPC server at %s: %v. Retrying in %v...", address, err, retryInterval)
+		logger.GetLogger().Printf("Failed to connect to RPC server at %s: %v. Retrying in %v...", address, err, retryInterval)
 		time.Sleep(retryInterval)
 	}
 
@@ -38,13 +38,13 @@ func ConnectRPC(ip string) {
 			reply := make([]byte, bufferSize)
 			err = client.Call("Listener.Send", line, &reply)
 			if err != nil {
-				log.Printf("RPC call failed: %v. Reconnecting...", err)
+				logger.GetLogger().Printf("RPC call failed: %v. Reconnecting...", err)
 				for {
 					client, err = rpc.Dial("tcp", address)
 					if err == nil {
 						break
 					}
-					log.Printf("Failed to reconnect to RPC server at %s: %v. Retrying in %v...", address, err, retryInterval)
+					logger.GetLogger().Printf("Failed to reconnect to RPC server at %s: %v. Retrying in %v...", address, err, retryInterval)
 					time.Sleep(retryInterval)
 				}
 			} else {
