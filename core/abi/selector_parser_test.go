@@ -18,6 +18,7 @@ package abi
 
 import (
 	"fmt"
+	"github.com/okuralabs/okura-node/logger"
 	"reflect"
 	"testing"
 )

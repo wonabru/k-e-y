@@ -1,8 +1,8 @@
 package clientrpc
 
 import (
+	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/tcpip"
-	"log"
 	"net/rpc"
 	"strconv"
 	"sync"

@@ -6,10 +6,10 @@ import (
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/blocks"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	clientrpc "github.com/okuralabs/okura-node/rpc/client"
 	"github.com/okuralabs/okura-node/transactionsDefinition"
 	"github.com/therecipe/qt/widgets"
-	"log"
 	"strconv"
 	"strings"
 )

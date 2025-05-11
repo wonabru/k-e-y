@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"github.com/okuralabs/okura-node/logger"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
