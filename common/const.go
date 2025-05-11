@@ -41,6 +41,7 @@ var (
 	MaxMessageSizeBytes            int32   = 151126018           // should be adjusted to maximal message sent
 	DefaultWalletHomePath                  = "/.okura/db/wallet/"
 	DefaultBlockchainHomePath              = "/.okura/db/blockchain/"
+	DefaultLogsHomePath                    = "/.okura/logs/"
 	ConnectionsWithoutVerification         = [][]byte{[]byte("TRAN"), []byte("STAT"), []byte("ENCR"), []byte("DETS"), []byte("STAK"), []byte("ADEX")}
 )
 

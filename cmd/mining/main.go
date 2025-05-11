@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"strconv"
 	"strings"
@@ -23,7 +24,50 @@ import (
 	"time"
 )
 
+// MultiWriter implements io.Writer and writes to multiple writers
+type MultiWriter struct {
+	writers []io.Writer
+}
+
+func (t *MultiWriter) Write(p []byte) (n int, err error) {
+	for _, w := range t.writers {
+		n, err = w.Write(p)
+		if err != nil {
+			return
+		}
+		if n != len(p) {
+			err = io.ErrShortWrite
+			return
+		}
+	}
+	return len(p), nil
+}
 func main() {
+	homePath, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	os.MkdirAll(homePath+common.DefaultLogsHomePath, 0744)
+	// Create log file
+	logFile, err := os.OpenFile(homePath+common.DefaultLogsHomePath+"mining.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logFile.Close()
+	// Create multi writer
+	mw := &MultiWriter{
+		writers: []io.Writer{
+			os.Stdout, // Console output
+			logFile,   // File output
+		},
+	}
+	// Create logger with multi writer
+	log.New(mw, "", log.LstdFlags)
+	// Set logger as the default logger
+	log.SetOutput(mw)
+	log.SetFlags(log.LstdFlags)
+	// Now you can use log functions as usual
+	log.Println("Application started")
 
 	//fmt.Print("Enter password: ")
 	//password, err := terminal.ReadPassword(0)
@@ -31,7 +75,6 @@ func main() {
 	//	log.Fatal(err)
 	//}
 	// only for purpose of testing to start from beginning
-	var err error
 	// Initialize wallet
 	log.Println("Initializing wallet...")
 	password := "a"
