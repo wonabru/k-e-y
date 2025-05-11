@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 	clientrpc "github.com/okuralabs/okura-node/rpc/client"
 	"github.com/okuralabs/okura-node/statistics"
 	"github.com/okuralabs/okura-node/wallet"
 	"github.com/therecipe/qt/widgets"
 	"strconv"
 	"strings"
-
-	"log"
 )
 
 var StatsLabel *widgets.QLabel

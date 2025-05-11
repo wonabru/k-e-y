@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/common"
 	"github.com/okuralabs/okura-node/crypto/oqs/rand"
+	"github.com/okuralabs/okura-node/logger"
 	clientrpc "github.com/okuralabs/okura-node/rpc/client"
 	"github.com/okuralabs/okura-node/services/transactionServices"
 	"github.com/okuralabs/okura-node/statistics"
@@ -13,7 +14,6 @@ import (
 	rand2 "math/rand"
 	"sync"
 
-	"log"
 	"os"
 	"time"
 )
