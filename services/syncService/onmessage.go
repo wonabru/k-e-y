@@ -272,6 +272,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		}
 		logger.GetLogger().Println("Starting final block processing and fund transfers")
 		common.IsSyncing.Store(true)
+		//defer common.IsSyncing.Store(false)
 		common.BlockMutex.Lock()
 		defer common.BlockMutex.Unlock()
 		was = false

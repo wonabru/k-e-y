@@ -125,5 +125,5 @@ func ResetAccountsAndBlocksSync(height int64) {
 
 	common.SetHeight(height)
 
-	common.IsSyncing.Store(true)
+	//common.IsSyncing.Store(true)
 }
