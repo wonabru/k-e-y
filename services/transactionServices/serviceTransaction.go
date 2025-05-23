@@ -144,16 +144,7 @@ func StartSubscribingTransactionMsg(ip [4]byte) {
 	var ipr [4]byte
 	logger.GetLogger().Printf("Starting transaction subscription to peer: %v", ip)
 
-	go func() {
-		for !quit {
-			tcpip.StartNewConnection(ip, recvChan, tcpip.TransactionTopic)
-			if quit {
-				break
-			}
-			// If we get here, connection was lost, wait before retrying
-			time.Sleep(time.Second * 5)
-		}
-	}()
+	go tcpip.StartNewConnection(ip, recvChan, tcpip.TransactionTopic)
 
 	logger.GetLogger().Println("Entering transaction message receiving loop for peer:", ip)
 	for !quit {
