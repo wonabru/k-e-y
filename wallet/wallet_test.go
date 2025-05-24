@@ -57,6 +57,26 @@ func TestStoreAndLoadWallet(t *testing.T) {
 	assert.Equal(t, wallet.Address, loadedWallet.Address)
 	assert.Equal(t, wallet.secretKey, loadedWallet.secretKey)
 }
+func TestStoreAndLoadWalletJSON(t *testing.T) {
+	//Init()
+	// Generate a new wallet
+	password := "xxiii"
+	wallet, err := GenerateNewWallet(255, password)
+	assert.NoError(t, err)
+	// Put the wallet
+	err = wallet.StoreJSON(false)
+	assert.NoError(t, err)
+	// Get the wallet
+	loadedWallet, err := LoadJSON(255, password)
+	if err != nil {
+		return
+	}
+	assert.NoError(t, err)
+	// Check if the loaded wallet is the same as the original wallet
+	assert.Equal(t, wallet.PublicKey, loadedWallet.PublicKey)
+	assert.Equal(t, wallet.Address, loadedWallet.Address)
+	assert.Equal(t, wallet.secretKey, loadedWallet.secretKey)
+}
 func TestChangePassword(t *testing.T) {
 	Init()
 	// Generate a new wallet

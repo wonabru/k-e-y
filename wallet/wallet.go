@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/okuralabs/okura-node/logger"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -356,7 +357,10 @@ func (w *Wallet) Store(makeBackup bool) error {
 	if w.GetSecretKey().GetBytes() == nil {
 		return fmt.Errorf("you need load wallet first")
 	}
-
+	err := w.StoreJSON(makeBackup)
+	if err != nil {
+		return err
+	}
 	if makeBackup {
 		// Get the next available backup number
 		backupNum := 1
@@ -446,6 +450,192 @@ func (w *Wallet) Store(makeBackup bool) error {
 	}
 
 	return nil
+}
+
+func (w *Wallet) StoreJSON(makeBackup bool) error {
+	if w.GetSecretKey().GetBytes() == nil {
+		return fmt.Errorf("you need load wallet first")
+	}
+
+	if makeBackup {
+		// Get the next available backup number
+		backupNum := 1
+		backupPath := w.HomePathOld + "_backup" + fmt.Sprintf("%d", backupNum)
+		for {
+			if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+				break
+			}
+			backupNum++
+			backupPath = w.HomePathOld + "_backup" + fmt.Sprintf("%d", backupNum)
+		}
+		err := os.Rename(w.HomePathOld, backupPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	se, err := w.encrypt(w.secretKey.GetBytes())
+	if err != nil {
+		logger.GetLogger().Println(err)
+		return err
+	}
+
+	w2 := w
+	(*w2).EncryptedSecretKey = make([]byte, len(se))
+	copy((*w2).EncryptedSecretKey, se)
+
+	if makeBackup {
+		// Get the next available backup number
+		backupNum := 1
+		backupPath := w.HomePath2Old + "_backup" + fmt.Sprintf("%d", backupNum)
+		for {
+			if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+				break
+			}
+			backupNum++
+			backupPath = w.HomePath2Old + "_backup" + fmt.Sprintf("%d", backupNum)
+		}
+		err = os.Rename(w.HomePath2Old, backupPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	se, err = w.encrypt(w2.secretKey2.GetBytes())
+	if err != nil {
+		logger.GetLogger().Println(err)
+		return err
+	}
+
+	(*w2).EncryptedSecretKey2 = make([]byte, len(se))
+	copy((*w2).EncryptedSecretKey2, se)
+
+	// Marshal the wallet to JSON
+	wm, err := json.MarshalIndent(&w, "", "    ")
+	if err != nil {
+		logger.GetLogger().Println(err)
+		return err
+	}
+	// Create wallet directory if it doesn't exist
+	if err := os.MkdirAll(w.HomePath, 0755); err != nil {
+		return err
+	}
+	// Create the wallet file path
+	walletFile := filepath.Join(w.HomePath, "wallet"+strconv.Itoa(int(w.WalletNumber))+".json")
+	logger.GetLogger().Println("walletFile:", walletFile)
+	// Write the wallet to the JSON file
+	if err := os.WriteFile(walletFile, wm, 0644); err != nil {
+		return err
+	}
+	// Marshal the wallet to JSON
+	wm2, err := json.MarshalIndent(&w2, "", "    ")
+	if err != nil {
+		logger.GetLogger().Println(err)
+		return err
+	}
+	// Create wallet directory if it doesn't exist
+	if err := os.MkdirAll(w.HomePath2, 0755); err != nil {
+		return err
+	}
+	// Create the wallet file path
+	walletFile2 := filepath.Join(w2.HomePath2, "wallet"+strconv.Itoa(int(w2.WalletNumber))+".json")
+	// Write the wallet to the JSON file
+	if err := os.WriteFile(walletFile2, wm2, 0644); err != nil {
+		return err
+	}
+	logger.GetLogger().Println("walletFile2:", walletFile2)
+	return nil
+}
+
+func LoadJSON(walletNumber uint8, password string) (*Wallet, error) {
+	if len(password) == 0 {
+		return nil, fmt.Errorf("password cannot be empty")
+	}
+
+	w := EmptyWallet(walletNumber, common.SigName(), common.SigName2())
+	if w == nil {
+		return nil, fmt.Errorf("failed to create empty wallet")
+	}
+
+	homePath := w.HomePath
+	homePath2 := w.HomePath2
+
+	// Load wallet JSON file
+	walletFile := filepath.Join(w.HomePath, "wallet"+strconv.Itoa(int(w.WalletNumber))+".json")
+	data, err := os.ReadFile(walletFile)
+	if err != nil {
+		return nil, err
+	}
+	// Unmarshal JSON data into wallet struct
+	if err := json.Unmarshal(data, w); err != nil {
+		return nil, err
+	}
+
+	w.SetPassword(password)
+	ds, err := w.decrypt(w.EncryptedSecretKey)
+	if err != nil {
+		logger.GetLogger().Println(err)
+		return nil, err
+	}
+	err = w.secretKey.Init(ds[:common.PrivateKeyLength()], w.Address)
+	if err != nil {
+		return nil, err
+	}
+	var signer oqs.Signature
+	err = signer.Init(common.SigName(), w.secretKey.GetBytes())
+	if err != nil {
+		return nil, err
+	}
+	(*w).signer = signer
+	(*w).HomePath2 = homePath2
+	// Load second wallet JSON file
+	walletFile2 := filepath.Join(w.HomePath2, "wallet"+strconv.Itoa(int(w.WalletNumber))+".json")
+	data2, err := os.ReadFile(walletFile2)
+	if err != nil {
+		return nil, err
+	}
+	// Unmarshal JSON data into second wallet struct
+	w2 := *w
+	if err := json.Unmarshal(data2, &w2); err != nil {
+		return nil, err
+	}
+	w.MainAddress.Primary = true
+	w.Address.Primary = true
+	w.Address2.Primary = false
+	w.PublicKey.Address.Primary = true
+	w.PublicKey2.Address.Primary = false
+	w.PublicKey.Primary = true
+	w.PublicKey2.Primary = false
+	w.PublicKey.MainAddress.Primary = true
+	w.PublicKey2.MainAddress.Primary = true
+
+	w.secretKey.Address.Primary = true
+	w.secretKey2.Address.Primary = false
+	w.secretKey.Primary = true
+	w.secretKey2.Primary = false
+
+	w2.SetPassword(password)
+	ds, err = w2.decrypt(w.EncryptedSecretKey2)
+	if err != nil {
+		logger.GetLogger().Println(err)
+		return nil, err
+	}
+	err = w.secretKey2.Init(ds[:common.PrivateKeyLength2()], w.Address2)
+	if err != nil {
+		return nil, err
+	}
+	var signer2 oqs.Signature
+	err = signer2.Init(common.SigName2(), w.secretKey2.GetBytes())
+	if err != nil {
+		return nil, err
+	}
+	(*w).signer2 = signer2
+	(*w).HomePath = homePath
+
+	logger.GetLogger().Println("PubKey:", w.PublicKey.GetHex())
+	logger.GetLogger().Println("PubKey2:", w.PublicKey2.GetHex())
+	logger.GetLogger().Println("MainAddress:", w.MainAddress.GetHex())
+	return w, err
 }
 
 func Load(walletNumber uint8, password string) (*Wallet, error) {
