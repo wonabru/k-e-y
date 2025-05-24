@@ -35,11 +35,11 @@ var (
 )
 
 var Ports = map[[2]byte]int{
-	TransactionTopic: 9091,
-	NonceTopic:       8091,
-	SelfNonceTopic:   7091,
-	SyncTopic:        6091,
-	RPCTopic:         9009,
+	TransactionTopic: 19023,
+	NonceTopic:       18023,
+	SelfNonceTopic:   17023,
+	SyncTopic:        16023,
+	RPCTopic:         19009,
 }
 
 var MyIP [4]byte
