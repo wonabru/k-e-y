@@ -60,14 +60,14 @@ In the case you are the first who run blockchain and generate genesis block you 
 
 Ports TCP needed to be opened:
 
-    TransactionTopic: 9091,
-    NonceTopic:       8091,
-    SelfNonceTopic:   7091,
-    SyncTopic:        6091,
+    TransactionTopic: 19023,
+    NonceTopic:       18023,
+    SelfNonceTopic:   17023,
+    SyncTopic:        16023,
 
 localhost port that should be closed from anywhere:
 
-    9009 - wallet - node communication
+    19009 - wallet - node communication
 
     8000 - qt requirements (localhost only)
 
