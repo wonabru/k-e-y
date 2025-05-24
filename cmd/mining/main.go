@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/okuralabs/okura-node/logger"
 	"github.com/okuralabs/okura-node/wallet"
+	"golang.org/x/crypto/ssh/terminal"
 	"strconv"
 	"strings"
 
@@ -29,15 +31,14 @@ func main() {
 	// Now you can use log functions as usual
 	logger.GetLogger().Println("Application started")
 
-	//fmt.Print("Enter password: ")
-	//password, err := terminal.ReadPassword(0)
-	//if err != nil {
-	//	logger.GetLogger().Fatal(err)
-	//}
-	// only for purpose of testing to start from beginning
+	fmt.Print("Enter password: ")
+	password, err := terminal.ReadPassword(0)
+	if err != nil {
+		logger.GetLogger().Fatal(err)
+	}
+
 	// Initialize wallet
 	logger.GetLogger().Println("Initializing wallet...")
-	password := "a"
 	wallet.InitActiveWallet(0, string(password))
 	addrbytes := [common.AddressLength]byte{}
 	copy(addrbytes[:], wallet.GetActiveWallet().Address.GetBytes())
