@@ -75,9 +75,32 @@ func init() {
 	// Assign the parsed IP to tcpip.MyIP
 	MyIP = [4]byte(ip4)
 
+	AddWhiteListIPs(MyIP)
+	AddWhiteListIPs([4]byte{0, 0, 0, 0})
 	// Rest of your application logic here...
 	logger.GetLogger().Printf("Successfully set NODE_IP to %d.%d.%d.%d", int(MyIP[0]), int(MyIP[1]), int(MyIP[2]), int(MyIP[3]))
 	validPeersConnected[MyIP] = 100
+
+	// Get WHITELIST_IP environment variable
+	ips = os.Getenv("WHITELIST_IP")
+	if ips == "" {
+		logger.GetLogger().Println("Warning: WHITELIST_IP environment variable is not set")
+		return
+	}
+
+	// Parse the IP address
+	ip = net.ParseIP(ips)
+	if ip == nil {
+		logger.GetLogger().Println("Warning: Failed to parse WHITELIST_IP '%s' as an IP address", ips)
+		return
+	}
+
+	ip4 = ip.To4()
+	if ip4 == nil {
+		logger.GetLogger().Println("Warning: failed to parse WHITELIST_IP '%s' as 4 byte format", ips)
+		return
+	}
+	AddWhiteListIPs([4]byte(ip4))
 }
 
 func GetIp() [4]byte {

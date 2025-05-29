@@ -11,13 +11,25 @@ import (
 
 var bannedIP map[[4]byte]int64
 var bannedIPMutex sync.RWMutex
+var whiteListIPs map[[4]byte]bool
 
 func init() {
 	bannedIP = map[[4]byte]int64{}
+	whiteListIPs = map[[4]byte]bool{}
 }
+
+func AddWhiteListIPs(ip [4]byte) {
+	whiteListIPs[ip] = true
+}
+
 func IsIPBanned(ip [4]byte) bool {
 	bannedIPMutex.RLock()
 	defer bannedIPMutex.RUnlock()
+	for wip, _ := range whiteListIPs {
+		if bytes.Equal(wip[:], ip[:]) {
+			return false
+		}
+	}
 	if hbanned, ok := bannedIP[ip]; ok {
 		if hbanned > common.GetCurrentTimeStampInSecond() {
 			return true
@@ -28,8 +40,10 @@ func IsIPBanned(ip [4]byte) bool {
 
 func BanIP(ip [4]byte) {
 	// internal IP should not be banned || bytes.Equal(ip[:2], InternalIP[:2])
-	if bytes.Equal(ip[:], MyIP[:]) || bytes.Equal(ip[:], []byte{0, 0, 0, 0}) {
-		return
+	for wip, _ := range whiteListIPs {
+		if bytes.Equal(wip[:], ip[:]) {
+			return
+		}
 	}
 	bannedIPMutex.Lock()
 	logger.GetLogger().Println("BANNING ", ip)
