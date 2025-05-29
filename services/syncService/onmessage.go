@@ -76,11 +76,14 @@ func OnMessage(addr [4]byte, m []byte) {
 				}
 			}
 		}
-		if h < 2024 {
+		if h < 123 {
 			common.IsSyncing.Store(true)
 		}
 		lastOtherHeight := common.GetInt64FromByte(txn[[2]byte{'L', 'H'}][0])
-		common.SetHeightMax(lastOtherHeight)
+		hMax := common.GetHeightMax()
+		if lastOtherHeight > hMax {
+			common.SetHeightMax(lastOtherHeight)
+		}
 		lastOtherBlockHashBytes := txn[[2]byte{'L', 'B'}][0]
 		if lastOtherHeight == h {
 			services.AdjustShiftInPastInReset(lastOtherHeight)
@@ -91,11 +94,15 @@ func OnMessage(addr [4]byte, m []byte) {
 			if !bytes.Equal(lastOtherBlockHashBytes, lastBlockHashBytes) {
 				SendGetHeaders(addr, lastOtherHeight)
 			}
-			common.IsSyncing.Store(false)
+			if lastOtherHeight > hMax {
+				common.IsSyncing.Store(false)
+			}
 			return
 		} else if lastOtherHeight < h {
 			services.AdjustShiftInPastInReset(lastOtherHeight)
-			common.IsSyncing.Store(false)
+			if lastOtherHeight > hMax {
+				common.IsSyncing.Store(false)
+			}
 			return
 		}
 		// when others have longer chain
@@ -272,7 +279,13 @@ func OnMessage(addr [4]byte, m []byte) {
 		}
 		logger.GetLogger().Println("Starting final block processing and fund transfers")
 		common.IsSyncing.Store(true)
-		defer common.IsSyncing.Store(false)
+		defer func() {
+			//hMax := common.GetHeightMax()
+			h := common.GetHeight()
+			if h > 123 {
+				common.IsSyncing.Store(false)
+			}
+		}()
 		common.BlockMutex.Lock()
 		defer common.BlockMutex.Unlock()
 		was = false
