@@ -76,7 +76,7 @@ func OnMessage(addr [4]byte, m []byte) {
 				}
 			}
 		}
-		if h < 10 {
+		if h < 2024 {
 			common.IsSyncing.Store(true)
 		}
 		lastOtherHeight := common.GetInt64FromByte(txn[[2]byte{'L', 'H'}][0])
