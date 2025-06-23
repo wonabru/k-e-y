@@ -177,7 +177,7 @@ func Send(conn *net.TCPConn, message []byte) error {
 	message = append(message, []byte("<-END->")...)
 
 	// Set write deadline to 2 seconds
-	conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+	conn.SetWriteDeadline(time.Now().Add(30 * time.Second))
 
 	_, err := conn.Write(message)
 	if err != nil {
