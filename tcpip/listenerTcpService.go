@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/okuralabs/okura-node/common"
-	"github.com/okuralabs/okura-node/logger"
 	"net"
 	"syscall"
 	"time"
+
+	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
 )
 
 func StartNewListener(sendChan <-chan []byte, topic [2]byte) {
@@ -193,7 +194,6 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		if err == nil {
 			break
 		}
-		tcpConn.SetNoDelay(true)
 		logger.GetLogger().Printf("Connection attempt %d to %s failed: %v", i+1, ipport, err)
 
 		time.Sleep(time.Second * 2)
