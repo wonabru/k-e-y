@@ -2,8 +2,9 @@ package syncServices
 
 import (
 	"bytes"
-	"github.com/okuralabs/okura-node/logger"
 	"runtime/debug"
+
+	"github.com/okuralabs/okura-node/logger"
 
 	"github.com/okuralabs/okura-node/account"
 	"github.com/okuralabs/okura-node/blocks"
@@ -76,7 +77,7 @@ func OnMessage(addr [4]byte, m []byte) {
 				}
 			}
 		}
-		if h < 123 {
+		if h < 23 {
 			common.IsSyncing.Store(true)
 		}
 		lastOtherHeight := common.GetInt64FromByte(txn[[2]byte{'L', 'H'}][0])
@@ -282,7 +283,7 @@ func OnMessage(addr [4]byte, m []byte) {
 		defer func() {
 			//hMax := common.GetHeightMax()
 			h := common.GetHeight()
-			if h > 123 {
+			if h > 23 {
 				common.IsSyncing.Store(false)
 			}
 		}()
