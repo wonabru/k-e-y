@@ -27,7 +27,7 @@ func main() {
 	time.Sleep(time.Second)
 
 	// needs to be called once before you can start using the QWidgets
-	app := widgets.NewQApplication(0, nil)
+	app := widgets.NewQApplication(1, os.Args[:1])
 	ip_this := tcpip.MyIP
 	ip_str := net.IPv4(ip_this[0], ip_this[1], ip_this[2], ip_this[3])
 	// create a window
