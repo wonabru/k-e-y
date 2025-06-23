@@ -3,9 +3,6 @@ package tcpip
 import (
 	"bytes"
 	"fmt"
-	"github.com/okuralabs/okura-node/common"
-	"github.com/okuralabs/okura-node/logger"
-	"golang.org/x/exp/rand"
 	"io"
 	"net"
 	"os"
@@ -15,6 +12,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/okuralabs/okura-node/common"
+	"github.com/okuralabs/okura-node/logger"
+	"golang.org/x/exp/rand"
 )
 
 var (
@@ -177,7 +178,7 @@ func Send(conn *net.TCPConn, message []byte) error {
 	message = append(message, []byte("<-END->")...)
 
 	// Set write deadline to 2 seconds
-	conn.SetWriteDeadline(time.Now().Add(30 * time.Second))
+	conn.SetWriteDeadline(time.Now().Add(4 * time.Second))
 
 	_, err := conn.Write(message)
 	if err != nil {
