@@ -1,6 +1,11 @@
 package main
 
 import (
+	"net"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/okuralabs/okura-node/cmd/gui/qtwidgets"
 	"github.com/okuralabs/okura-node/common"
 	clientrpc "github.com/okuralabs/okura-node/rpc/client"
@@ -8,10 +13,6 @@ import (
 	"github.com/okuralabs/okura-node/tcpip"
 	"github.com/okuralabs/okura-node/wallet"
 	"github.com/therecipe/qt/widgets"
-	"net"
-	"os"
-	"strconv"
-	"time"
 )
 
 func main() {
@@ -26,7 +27,7 @@ func main() {
 	time.Sleep(time.Second)
 
 	// needs to be called once before you can start using the QWidgets
-	app := widgets.NewQApplication(len(os.Args), os.Args)
+	app := widgets.NewQApplication(0, nil)
 	ip_this := tcpip.MyIP
 	ip_str := net.IPv4(ip_this[0], ip_this[1], ip_this[2], ip_this[3])
 	// create a window
