@@ -17,6 +17,8 @@ import (
 )
 
 func main() {
+	// needs to be called once before you can start using the QWidgets
+	app := widgets.NewQApplication(len(os.Args), os.Args)
 	var ip string
 	if len(os.Args) > 1 {
 		ip = os.Args[1]
@@ -27,8 +29,7 @@ func main() {
 	go clientrpc.ConnectRPC(ip)
 	time.Sleep(time.Second)
 	fmt.Println(os.Args)
-	// needs to be called once before you can start using the QWidgets
-	app := widgets.NewQApplication(len(os.Args), os.Args)
+
 	ip_this := tcpip.MyIP
 	ip_str := net.IPv4(ip_this[0], ip_this[1], ip_this[2], ip_this[3])
 	// create a window
