@@ -193,6 +193,7 @@ func StartNewConnection(ip [4]byte, receiveChan chan []byte, topic [2]byte) {
 		if err == nil {
 			break
 		}
+		tcpConn.SetNoDelay(true)
 		logger.GetLogger().Printf("Connection attempt %d to %s failed: %v", i+1, ipport, err)
 
 		time.Sleep(time.Second * 2)
