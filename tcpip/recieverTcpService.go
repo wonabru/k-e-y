@@ -175,6 +175,10 @@ func Send(conn *net.TCPConn, message []byte) error {
 
 	message = append(common.MessageInitialization[:], message...)
 	message = append(message, []byte("<-END->")...)
+
+	// Set write deadline to 2 seconds
+	conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+
 	_, err := conn.Write(message)
 	if err != nil {
 		logger.GetLogger().Printf("Can't send response: %v", err)
