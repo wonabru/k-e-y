@@ -3,13 +3,14 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strconv"
+	"sync"
+
 	"github.com/joho/godotenv"
 	"github.com/okuralabs/okura-node/crypto/oqs"
 	"github.com/okuralabs/okura-node/logger"
 	"golang.org/x/exp/rand"
-	"os"
-	"strconv"
-	"sync"
 )
 
 var (
@@ -43,6 +44,7 @@ var (
 	DefaultBlockchainHomePath              = "/.okura/db/blockchain/"
 	DefaultLogsHomePath                    = "/.okura/logs/"
 	ConnectionsWithoutVerification         = [][]byte{[]byte("TRAN"), []byte("STAT"), []byte("ENCR"), []byte("DETS"), []byte("STAK"), []byte("ADEX")}
+	CurrentHeightOfNetwork         int64   = 23
 )
 
 // db prefixes
@@ -171,4 +173,9 @@ func init() {
 	if rewardPercentage > 500 {
 		logger.GetLogger().Fatal("reward for operational account has to be less than 50%")
 	}
+	ch, err := strconv.Atoi(os.Getenv("HEIGHT_OF_NETWORK"))
+	if err != nil {
+		logger.GetLogger().Panicln("Warning no declaration of HEIGHT_OF_NETWORK")
+	}
+	CurrentHeightOfNetwork = int64(ch)
 }
